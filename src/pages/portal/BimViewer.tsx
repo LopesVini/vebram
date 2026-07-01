@@ -5,7 +5,7 @@ import {
 import * as THREE from "three";
 import { OrbitControls } from "three-stdlib";
 import { IfcAPI } from "web-ifc";
-import { useClientProject } from "@/hooks/useClientProject";
+import { useClientProject } from "@/hooks/data/useClientProject";
 
 const DEMO_IFC_URL = "/models/demo.ifc";
 

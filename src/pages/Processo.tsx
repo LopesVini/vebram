@@ -3,9 +3,9 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Link } from "react-router-dom";
 import { ArrowRight, MessageSquare, Compass, Ruler, Blocks, CheckSquare, Home } from "lucide-react";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import { useScrollToTop } from "@/hooks/useScrollToTop";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
+import { useScrollToTop } from "@/hooks/ui/useScrollToTop";
 
 gsap.registerPlugin(ScrollTrigger);
 

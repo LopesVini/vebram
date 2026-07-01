@@ -2,9 +2,9 @@ import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Layers, Zap, Droplets, HardHat } from "lucide-react";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import { useScrollToTop } from "@/hooks/useScrollToTop";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
+import { useScrollToTop } from "@/hooks/ui/useScrollToTop";
 
 gsap.registerPlugin(ScrollTrigger);
 

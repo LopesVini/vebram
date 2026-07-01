@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/data/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,7 +9,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { motion } from "framer-motion";
 import { Lock, ArrowRight, Activity, Box } from "lucide-react";
 import { LineChart, Line, ResponsiveContainer } from "recharts";
-import VerticeLogo from "@/components/VerticeLogo";
+import VerticeLogo from "@/components/layout/VerticeLogo";
 
 const mockChartData = [
   { val: 10 }, { val: 25 }, { val: 20 }, { val: 40 }, { val: 35 }, { val: 60 }

@@ -1,6 +1,6 @@
 import { FileText, CheckCircle, Clock, ArrowRight, MessageSquare, Loader2, Inbox } from "lucide-react";
-import { useClientProject } from "@/hooks/useClientProject";
-import { useUpdates } from "@/hooks/useUpdates";
+import { useClientProject } from "@/hooks/data/useClientProject";
+import { useUpdates } from "@/hooks/data/useUpdates";
 
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleString("pt-BR", {

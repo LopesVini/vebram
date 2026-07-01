@@ -6,7 +6,7 @@ import {
   User as UserIcon, Mail, Phone, MapPin, Lock, Eye, EyeOff,
   Save, Calendar, Shield, KeyRound, LogOut, CheckCircle2, AlertCircle,
 } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/data/useAuth";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 

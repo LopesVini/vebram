@@ -1,9 +1,9 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ArrowUpRight } from "lucide-react";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import { useScrollToTop } from "@/hooks/useScrollToTop";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
+import { useScrollToTop } from "@/hooks/ui/useScrollToTop";
 
 // Imagens de exemplo do Unsplash conforme solicitado
 const projects = [

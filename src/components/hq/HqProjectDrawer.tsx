@@ -5,12 +5,12 @@ import {
   ChevronDown, Send, Lock, Box, Upload, AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
-import type { Project } from "@/hooks/useProjects";
-import { useMilestones, calcProgress } from "@/hooks/useMilestones";
-import type { Milestone } from "@/hooks/useMilestones";
-import { useUpdates } from "@/hooks/useUpdates";
-import type { Update } from "@/hooks/useUpdates";
-import { useProjectIfc, storagePath } from "@/hooks/useProjectIfc";
+import type { Project } from "@/hooks/data/useProjects";
+import { useMilestones, calcProgress } from "@/hooks/data/useMilestones";
+import type { Milestone } from "@/hooks/data/useMilestones";
+import { useUpdates } from "@/hooks/data/useUpdates";
+import type { Update } from "@/hooks/data/useUpdates";
+import { useProjectIfc, storagePath } from "@/hooks/data/useProjectIfc";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

@@ -1,12 +1,12 @@
 import { useEffect } from "react";
-import Navbar from "@/components/Navbar";
-import HeroSection from "@/components/HeroSection";
-import Philosophy from "@/components/Philosophy";
-import GetStarted from "@/components/GetStarted";
-import Footer from "@/components/Footer";
+import Navbar from "@/components/layout/Navbar";
+import HeroSection from "@/components/sections/HeroSection";
+import Philosophy from "@/components/sections/Philosophy";
+import GetStarted from "@/components/sections/GetStarted";
+import Footer from "@/components/layout/Footer";
 import { ArrowRight, Layers, Ruler, Blocks } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useScrollToTop } from "@/hooks/useScrollToTop";
+import { useScrollToTop } from "@/hooks/ui/useScrollToTop";
 
 const Index = () => {
   useScrollToTop();

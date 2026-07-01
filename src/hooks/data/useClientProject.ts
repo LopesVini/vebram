@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/hooks/useAuth";
-import type { Project } from "@/hooks/useProjects";
+import { useAuth } from "@/hooks/data/useAuth";
+import type { Project } from "@/hooks/data/useProjects";
 
 export function useClientProject() {
   const { user } = useAuth();

@@ -1,14 +1,23 @@
-import urllib.request
+import os
 import json
+import urllib.request
+import urllib.error
 
-url = "https://vertice-automation.onrender.com/process-quote"
+# A chave NÃO fica escrita no código. Defina no terminal antes de rodar:
+#   export AUTOMATION_API_KEY="sua-chave"
+#   python automation/test_api.py
+API_KEY = os.getenv("AUTOMATION_API_KEY")
+if not API_KEY:
+    raise SystemExit("Defina a variável de ambiente AUTOMATION_API_KEY antes de rodar este teste.")
+
+url = os.getenv("AUTOMATION_URL", "https://vertice-automation.onrender.com/process-quote")
 headers = {
     "Content-Type": "application/json",
-    "x-api-key": "verticie2026-auto"
+    "x-api-key": API_KEY,
 }
 data = {
     "nome": "Teste",
-    "email": "vinicilops@gmail.com",
+    "email": "teste@exemplo.com",
     "celular": "3199999999",
     "cidade": "BH",
     "tipo": "Projeto",

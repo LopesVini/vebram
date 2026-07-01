@@ -4,8 +4,8 @@ import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider } from "@/hooks/useAuth";
-import { ThemeProvider } from "@/components/ThemeProvider";
+import { AuthProvider } from "@/hooks/data/useAuth";
+import { ThemeProvider } from "@/components/layout/ThemeProvider";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -18,11 +18,11 @@ import Processo from "./pages/Processo";
 import Orcamento from "./pages/Orcamento";
 import Contato from "./pages/Contato";
 import NotFound from "./pages/NotFound";
-import ErrorBoundary from "./components/ErrorBoundary";
+import ErrorBoundary from "./components/layout/ErrorBoundary";
 import ClientLogin from "./pages/ClientLogin";
 import PortalLayout from "./components/portal/PortalLayout";
 import ProjectDashboard from "./pages/portal/ProjectDashboard";
-import BimPlaceholder from "./pages/portal/BimPlaceholder";
+import BimViewer from "./pages/portal/BimViewer";
 import ProjectUpdates from "./pages/portal/ProjectUpdates";
 import HqLayout from "./components/hq/HqLayout";
 import HqDashboard from "./pages/hq/HqDashboard";
@@ -91,7 +91,7 @@ const App = () => (
               <Route path="/login" element={<ClientLogin />} />
               <Route path="/portal" element={<PortalLayout />}>
                 <Route index element={<ProjectDashboard />} />
-                <Route path="bim" element={<BimPlaceholder />} />
+                <Route path="bim" element={<BimViewer />} />
                 <Route path="updates" element={<ProjectUpdates />} />
                 <Route path="profile" element={<Profile />} />
               </Route>

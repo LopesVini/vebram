@@ -9,10 +9,10 @@ import {
   Check, Send, Sparkles, Bot, Loader2, Inbox, Trash2,
   Compass, Ruler, Blocks, ClipboardCheck, Award, Briefcase,
 } from "lucide-react";
-import { useGroqChat } from "@/hooks/useGroqChat";
-import { useClientProject } from "@/hooks/useClientProject";
-import { useMilestones, calcProgress } from "@/hooks/useMilestones";
-import { useUpdates } from "@/hooks/useUpdates";
+import { useGroqChat } from "@/hooks/data/useGroqChat";
+import { useClientProject } from "@/hooks/data/useClientProject";
+import { useMilestones, calcProgress } from "@/hooks/data/useMilestones";
+import { useUpdates } from "@/hooks/data/useUpdates";
 
 // ── Animated Progress Panel ───────────────────────────────────────────────────
 
