@@ -24,7 +24,7 @@ const HeroSection = () => {
   return (
     <section 
       ref={container}
-      className="relative h-[100dvh] w-full overflow-hidden flex items-end pb-24 md:pb-32 px-6 md:px-12 lg:px-24"
+      className="relative min-h-screen w-full overflow-hidden flex items-end pt-28 pb-24 md:pb-32 px-6 md:px-12 lg:px-24"
     >
       {/* Background Image & Gradient */}
       <div className="absolute inset-0 z-0">

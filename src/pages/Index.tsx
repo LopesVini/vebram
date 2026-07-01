@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
 import HeroSection from "@/components/sections/HeroSection";
 import Philosophy from "@/components/sections/Philosophy";
@@ -10,8 +9,6 @@ import { useScrollToTop } from "@/hooks/ui/useScrollToTop";
 
 const Index = () => {
   useScrollToTop();
-  useEffect(() => {
-  }, []);
 
   return (
     <div className="bg-background min-h-screen text-foreground antialiased selection:bg-accent/30 selection:text-accent-foreground">
