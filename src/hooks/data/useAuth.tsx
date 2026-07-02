@@ -55,7 +55,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setLoading(false);
     }
 
-    supabase.auth.getSession().then(({ data: { session } }) => apply(session));
+    // getSession() devolve o que está salvo no navegador SEM conferir com o
+    // servidor — uma sessão antiga/revogada (ex.: após rotação de chaves)
+    // "parece" válida e liberaria o portal sem login. Quando há sessão salva,
+    // confirmamos com getUser() (bate no servidor) antes de aceitá-la; se o
+    // servidor rejeitar, descartamos e tratamos como deslogado.
+    async function validateAndApply(session: Session | null) {
+      if (session) {
+        const { error } = await supabase.auth.getUser();
+        if (error) {
+          await supabase.auth.signOut();
+          session = null;
+        }
+      }
+      await apply(session);
+    }
+
+    supabase.auth.getSession().then(({ data: { session } }) => validateAndApply(session));
 
     const {
       data: { subscription },

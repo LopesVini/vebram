@@ -22,20 +22,9 @@ export function useContacts() {
     if (!user) return;
     setLoading(true);
 
-    // Garante que o próprio perfil existe no banco
-    await supabase.from("profiles").upsert(
-      {
-        id: user.id,
-        display_name:
-          user.user_metadata?.display_name ||
-          user.email?.split("@")[0] ||
-          "Usuário",
-        email: user.email,
-        role: myRole,
-      },
-      { onConflict: "id" }
-    );
-
+    // O perfil é criado pelo gatilho handle_new_user no banco; o cargo
+    // (role) NUNCA é gravado a partir do navegador — o upsert que fazia
+    // isso era uma brecha (permitia se promover a admin) e foi removido.
     const { data: profiles } = await supabase
       .from("profiles")
       .select("id, display_name, email")
@@ -64,7 +53,7 @@ export function useContacts() {
       }))
     );
     setLoading(false);
-  }, [user?.id]);
+  }, [user, targetRole]);
 
   useEffect(() => {
     fetchContacts();
