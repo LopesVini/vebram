@@ -1,8 +1,8 @@
 import { Navigate, Outlet, NavLink, Link } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/data/useAuth";
 import { Loader2, LogOut, LayoutDashboard, Box, History, MoreVertical, User, UserCircle, Sun, Moon } from "lucide-react";
-import { useTheme } from "@/components/ThemeProvider";
-import VerticeLogo from "@/components/VerticeLogo";
+import { useTheme } from "@/components/layout/ThemeProvider";
+import VerticeLogo from "@/components/layout/VerticeLogo";
 import FloatingChat from "@/components/chat/FloatingChat";
 import {
   DropdownMenu,

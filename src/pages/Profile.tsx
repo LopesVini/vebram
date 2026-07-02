@@ -6,7 +6,7 @@ import {
   User as UserIcon, Mail, Phone, MapPin, Lock, Eye, EyeOff,
   Save, Calendar, Shield, KeyRound, LogOut, CheckCircle2, AlertCircle,
 } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/data/useAuth";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -30,7 +30,7 @@ const scoreColor = ["bg-zinc-300", "bg-red-500", "bg-amber-500", "bg-blue-500", 
 // ── Component ────────────────────────────────────────────────────────────────
 
 export default function Profile() {
-  const { user, displayName, updateProfile, updatePassword, signOut } = useAuth();
+  const { user, isAdmin, displayName, updateProfile, updatePassword, signOut } = useAuth();
   const { pathname } = useLocation();
   const isHq = pathname.startsWith("/hq");
 
@@ -56,11 +56,7 @@ export default function Profile() {
     setBio(user?.user_metadata?.bio    || "");
   }, [user, displayName]);
 
-  const role = useMemo(() => {
-    const email = user?.email || "";
-    if (email.includes("admin") || email.includes("@vertice")) return "Administrador";
-    return "Cliente";
-  }, [user]);
+  const role = isAdmin ? "Administrador" : "Cliente";
 
   const initials = useMemo(() => {
     return name.split(" ").filter(Boolean).slice(0, 2).map(w => w[0]?.toUpperCase()).join("") || "U";

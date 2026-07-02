@@ -4,30 +4,34 @@ import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider } from "@/hooks/useAuth";
-import { ThemeProvider } from "@/components/ThemeProvider";
+import { AuthProvider } from "@/hooks/data/useAuth";
+import { ThemeProvider } from "@/components/layout/ThemeProvider";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
-import Index from "./pages/Index";
-import Sobre from "./pages/Sobre";
-import Servicos from "./pages/Servicos";
-import Projetos from "./pages/Projetos";
-import Processo from "./pages/Processo";
-import Orcamento from "./pages/Orcamento";
-import Contato from "./pages/Contato";
+import Index from "./pages/institutional/Index";
+import Sobre from "./pages/institutional/Sobre";
+import Servicos from "./pages/institutional/Servicos";
+import Projetos from "./pages/institutional/Projetos";
+import Processo from "./pages/institutional/Processo";
+import Orcamento from "./pages/institutional/Orcamento";
+import Contato from "./pages/institutional/Contato";
 import NotFound from "./pages/NotFound";
-import ErrorBoundary from "./components/ErrorBoundary";
-import ClientLogin from "./pages/ClientLogin";
+import ErrorBoundary from "./components/layout/ErrorBoundary";
+import ClientLogin from "./pages/portal/ClientLogin";
 import PortalLayout from "./components/portal/PortalLayout";
 import ProjectDashboard from "./pages/portal/ProjectDashboard";
-import BimPlaceholder from "./pages/portal/BimPlaceholder";
+import BimViewer from "./pages/portal/BimViewer";
 import ProjectUpdates from "./pages/portal/ProjectUpdates";
 import HqLayout from "./components/hq/HqLayout";
 import HqDashboard from "./pages/hq/HqDashboard";
 import HqProjects from "./pages/hq/HqProjects";
 import HqClients from "./pages/hq/HqClients";
+import HqFeed from "./pages/hq/HqFeed";
+import HqCalendar from "./pages/hq/HqCalendar";
+import HqPolls from "./pages/hq/HqPolls";
+import HqMembers from "./pages/hq/HqMembers";
 import Profile from "./pages/Profile";
 
 const queryClient = new QueryClient();
@@ -91,7 +95,7 @@ const App = () => (
               <Route path="/login" element={<ClientLogin />} />
               <Route path="/portal" element={<PortalLayout />}>
                 <Route index element={<ProjectDashboard />} />
-                <Route path="bim" element={<BimPlaceholder />} />
+                <Route path="bim" element={<BimViewer />} />
                 <Route path="updates" element={<ProjectUpdates />} />
                 <Route path="profile" element={<Profile />} />
               </Route>
@@ -101,6 +105,10 @@ const App = () => (
                 <Route index element={<HqDashboard />} />
                 <Route path="projects" element={<HqProjects />} />
                 <Route path="clients" element={<HqClients />} />
+                <Route path="feed" element={<HqFeed />} />
+                <Route path="calendar" element={<HqCalendar />} />
+                <Route path="polls" element={<HqPolls />} />
+                <Route path="members" element={<HqMembers />} />
                 <Route path="profile" element={<Profile />} />
               </Route>
 

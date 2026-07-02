@@ -3,8 +3,8 @@ import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Search, MoreHorizontal, Clock, ChevronRight, X, Briefcase, Loader2, Trash2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { useProjects } from "@/hooks/useProjects";
-import type { Project } from "@/hooks/useProjects";
+import { useProjects } from "@/hooks/data/useProjects";
+import type { Project } from "@/hooks/data/useProjects";
 import { supabase } from "@/lib/supabase";
 import HqProjectDrawer from "@/components/hq/HqProjectDrawer";
 
