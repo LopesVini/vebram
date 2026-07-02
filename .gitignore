@@ -32,3 +32,6 @@ automation/.tmp/
 
 # Chaves do frontend — NUNCA commitar
 .env
+
+# Artefatos temporários do Supabase CLI
+supabase/.temp/
