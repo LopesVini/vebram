@@ -1,5 +1,5 @@
-import { useState, useId } from "react";
-import { motion, AnimatePresence, useReducedMotion, type Variants } from "framer-motion";
+import { useState, useId, useRef } from "react";
+import { motion, AnimatePresence, useReducedMotion, useScroll, useTransform, type Variants } from "framer-motion";
 import { Link } from "react-router-dom";
 import {
   ArrowRight, MessageSquare, Compass, Ruler, Blocks, CheckSquare, Home,
@@ -119,21 +119,33 @@ function ViewToggle({ active, onChange, baseId }: { active: ViewKey; onChange: (
 // ── Timeline view ─────────────────────────────────────────────────────────────
 
 function TimelineView({ reduce }: { reduce: boolean | null }) {
+  const railRef = useRef<HTMLDivElement>(null);
+  // Progresso da linha azul atado ao scroll: preenche conforme a seção passa pela viewport.
+  const { scrollYProgress } = useScroll({ target: railRef, offset: ["start 0.8", "end 0.55"] });
+  const headTop = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
+
   const container: Variants = {
     hidden: {},
     show: { transition: { staggerChildren: reduce ? 0 : 0.12, delayChildren: reduce ? 0 : 0.1 } },
   };
 
   return (
-    <div className="max-w-5xl mx-auto relative">
+    <div ref={railRef} className="max-w-5xl mx-auto relative">
       {/* Center rail */}
       <div className="absolute left-[28px] md:left-1/2 top-0 bottom-0 w-[2px] bg-border transform md:-translate-x-1/2 hidden sm:block" />
+      {/* Linha de progresso que segue o scroll para baixo */}
       <motion.div
-        className="absolute left-[28px] md:left-1/2 top-0 bottom-0 w-[2px] bg-accent origin-top transform md:-translate-x-1/2 hidden sm:block shadow-[0_0_15px_hsl(var(--accent)/0.5)]"
-        initial={{ scaleY: reduce ? 1 : 0 }}
-        animate={{ scaleY: 1 }}
-        transition={{ duration: reduce ? 0 : 1.4, ease: EASE }}
+        className="absolute left-[28px] md:left-1/2 top-0 bottom-0 w-[2px] bg-accent origin-top transform md:-translate-x-1/2 hidden sm:block shadow-[0_0_15px_hsl(var(--accent)/0.6)]"
+        style={{ scaleY: reduce ? 1 : scrollYProgress }}
       />
+      {/* Cabeça luminosa que desce junto com o progresso */}
+      {!reduce && (
+        <motion.span
+          aria-hidden="true"
+          className="absolute left-[28px] md:left-1/2 w-3.5 h-3.5 rounded-full bg-accent -translate-x-1/2 -translate-y-1/2 hidden sm:block z-20 shadow-[0_0_16px_4px_hsl(var(--accent)/0.7)]"
+          style={{ top: headTop }}
+        />
+      )}
 
       <motion.ol
         variants={container}

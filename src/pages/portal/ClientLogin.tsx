@@ -6,7 +6,7 @@ import { fetchRole, isAdminRole } from "@/lib/roles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/ui/use-toast";
 import { motion } from "framer-motion";
 import { Lock, ArrowRight, Activity, Box } from "lucide-react";
 import { LineChart, Line, ResponsiveContainer } from "recharts";
