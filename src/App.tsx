@@ -90,7 +90,11 @@ const App = () => (
         <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
+        {/* v7_startTransition: durante a navegação o React mantém a tela
+            atual visível enquanto o código da próxima rota baixa, em vez de
+            desmontar tudo e mostrar o fallback — elimina o "piscar" branco.
+            O RouteFallback passa a aparecer só no primeiríssimo carregamento. */}
+        <BrowserRouter future={{ v7_startTransition: true }}>
           <RouteChangeHandler />
           <ErrorBoundary>
             <Suspense fallback={<RouteFallback />}>

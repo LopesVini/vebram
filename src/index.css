@@ -82,4 +82,15 @@
   .container-tight {
     @apply mx-auto max-w-6xl;
   }
+
+  /* Rolagem sem barra visível: o conteúdo continua 100% rolável
+     (arrastar, roda do mouse, touch); só a scrollbar some. Usado nas
+     categorias do Mural. Cobre Firefox, IE/Edge legado e WebKit. */
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
 }
