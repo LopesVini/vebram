@@ -8,9 +8,23 @@ export interface TheVerticeProfile {
   email: string | null;
   role: string;
   tag: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   created_at: string;
 }
+
+// Formato bruto que o Supabase devolve nos selects com joins,
+// antes de convertermos para os tipos de cima.
+type PostRow = Omit<TheVerticePost, "views" | "likes" | "comments"> & {
+  views: number | null;
+  post_likes: { user_id: string }[] | null;
+  comments: TheVerticeComment[] | null;
+};
+
+type PollRow = Omit<TheVerticePoll, "options"> & {
+  poll_options:
+    | (Omit<TheVerticePollOption, "voters"> & { poll_votes: { user_id: string }[] | null })[]
+    | null;
+};
 
 export interface TheVerticeComment {
   id: string;
@@ -83,7 +97,7 @@ export function useTheVertice() {
     const activeProfiles = (pr.data as TheVerticeProfile[]) || [];
     setProfiles(activeProfiles);
 
-    const mappedPosts = (po.data || []).map((p: any) => ({
+    const mappedPosts: TheVerticePost[] = ((po.data as PostRow[] | null) || []).map((p) => ({
       id: p.id,
       author_id: p.author_id,
       project_id: p.project_id,
@@ -93,27 +107,27 @@ export function useTheVertice() {
       image: p.image,
       views: p.views || 0,
       created_at: p.created_at,
-      likes: (p.post_likes || []).map((x: any) => x.user_id),
-      comments: (p.comments || []).slice().sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()),
-    })) as TheVerticePost[];
+      likes: (p.post_likes || []).map((x) => x.user_id),
+      comments: (p.comments || []).slice().sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()),
+    }));
     setPosts(mappedPosts);
 
     setEvents((ev.data as TheVerticeEvent[]) || []);
 
-    const mappedPolls = (pl.data || []).map((p: any) => ({
+    const mappedPolls: TheVerticePoll[] = ((pl.data as PollRow[] | null) || []).map((p) => ({
       id: p.id,
       author_id: p.author_id,
       question: p.question,
       created_at: p.created_at,
-      options: (p.poll_options || []).slice().sort((a: any, b: any) => a.position - b.position)
-        .map((o: any) => ({
+      options: (p.poll_options || []).slice().sort((a, b) => a.position - b.position)
+        .map((o) => ({
           id: o.id,
           poll_id: o.poll_id,
           text: o.text,
           position: o.position,
-          voters: (o.poll_votes || []).map((v: any) => v.user_id),
+          voters: (o.poll_votes || []).map((v) => v.user_id),
         })),
-    })) as TheVerticePoll[];
+    }));
     setPolls(mappedPolls);
 
     const me = activeProfiles.find((p) => p.id === user.id) || null;

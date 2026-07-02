@@ -4,7 +4,7 @@ import {
 } from "lucide-react";
 import * as THREE from "three";
 import { OrbitControls } from "three-stdlib";
-import { IfcAPI } from "web-ifc";
+import { IfcAPI, FlatMesh } from "web-ifc";
 import { useClientProject } from "@/hooks/data/useClientProject";
 
 const DEMO_IFC_URL = "/models/demo.ifc";
@@ -151,7 +151,7 @@ async function loadIfcIntoGroup(
   let meshCount = 0;
   let triCount  = 0;
 
-  api.StreamAllMeshes(modelID, (mesh: any) => {
+  api.StreamAllMeshes(modelID, (mesh: FlatMesh) => {
     const placedGeometries = mesh.geometries;
     for (let i = 0; i < placedGeometries.size(); i++) {
       const placed = placedGeometries.get(i);
@@ -224,7 +224,7 @@ async function loadIfcIntoGroup(
 }
 
 // Constrói uma árvore espacial básica (Site → Building → Storey)
-function buildSpatialTree(api: any, modelID: number): SpatialNode | null {
+function buildSpatialTree(api: IfcAPI, modelID: number): SpatialNode | null {
   try {
     // IFCSITE = 4097777520, IFCBUILDING = 1095909175, IFCBUILDINGSTOREY = 3124254112, IFCSPACE = 3856911033
     const sites    = api.GetLineIDsWithType(modelID, 4097777520);
@@ -320,8 +320,8 @@ export default function BimViewer() {
       setTree(result.tree);
       setIsProjectModel(fromProject);
       setTimeout(fitToModel, 50);
-    } catch (e: any) {
-      setError(e?.message || "Falha ao carregar modelo IFC.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Falha ao carregar modelo IFC.");
     } finally {
       setLoading(false);
       setProgress("");
@@ -337,8 +337,8 @@ export default function BimViewer() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const buf = await res.arrayBuffer();
       await loadFromBuffer(buf, "Modelo Demo (small.ifc)", false);
-    } catch (e: any) {
-      setError("Não foi possível baixar o modelo demo. " + (e?.message ?? ""));
+    } catch (e) {
+      setError("Não foi possível baixar o modelo demo. " + (e instanceof Error ? e.message : ""));
       setLoading(false);
       setProgress("");
     }
@@ -357,8 +357,8 @@ export default function BimViewer() {
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const buf = await res.arrayBuffer();
           await loadFromBuffer(buf, project.name, true);
-        } catch (e: any) {
-          setError("Não foi possível carregar o modelo do projeto. " + (e?.message ?? ""));
+        } catch (e) {
+          setError("Não foi possível carregar o modelo do projeto. " + (e instanceof Error ? e.message : ""));
           setLoading(false);
           setProgress("");
         }

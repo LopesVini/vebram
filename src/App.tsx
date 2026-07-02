@@ -1,4 +1,4 @@
-import { useLayoutEffect } from "react";
+import { lazy, Suspense, useLayoutEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -11,28 +11,40 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
 import Index from "./pages/institutional/Index";
-import Sobre from "./pages/institutional/Sobre";
-import Servicos from "./pages/institutional/Servicos";
-import Projetos from "./pages/institutional/Projetos";
-import Processo from "./pages/institutional/Processo";
-import Orcamento from "./pages/institutional/Orcamento";
-import Contato from "./pages/institutional/Contato";
 import NotFound from "./pages/NotFound";
 import ErrorBoundary from "./components/layout/ErrorBoundary";
-import ClientLogin from "./pages/portal/ClientLogin";
-import PortalLayout from "./components/portal/PortalLayout";
-import ProjectDashboard from "./pages/portal/ProjectDashboard";
-import BimViewer from "./pages/portal/BimViewer";
-import ProjectUpdates from "./pages/portal/ProjectUpdates";
-import HqLayout from "./components/hq/HqLayout";
-import HqDashboard from "./pages/hq/HqDashboard";
-import HqProjects from "./pages/hq/HqProjects";
-import HqClients from "./pages/hq/HqClients";
-import HqFeed from "./pages/hq/HqFeed";
-import HqCalendar from "./pages/hq/HqCalendar";
-import HqPolls from "./pages/hq/HqPolls";
-import HqMembers from "./pages/hq/HqMembers";
-import Profile from "./pages/Profile";
+
+// Code splitting: cada página vira um arquivo separado que o navegador
+// só baixa quando a rota é visitada. Sem isso, quem abre a home baixava
+// o site inteiro (inclusive o visualizador 3D, com three.js + web-ifc).
+// A home (Index) continua no bundle principal para carregar na hora.
+const Sobre = lazy(() => import("./pages/institutional/Sobre"));
+const Servicos = lazy(() => import("./pages/institutional/Servicos"));
+const Projetos = lazy(() => import("./pages/institutional/Projetos"));
+const Processo = lazy(() => import("./pages/institutional/Processo"));
+const Orcamento = lazy(() => import("./pages/institutional/Orcamento"));
+const Contato = lazy(() => import("./pages/institutional/Contato"));
+const ClientLogin = lazy(() => import("./pages/portal/ClientLogin"));
+const PortalLayout = lazy(() => import("./components/portal/PortalLayout"));
+const ProjectDashboard = lazy(() => import("./pages/portal/ProjectDashboard"));
+const BimViewer = lazy(() => import("./pages/portal/BimViewer"));
+const ProjectUpdates = lazy(() => import("./pages/portal/ProjectUpdates"));
+const HqLayout = lazy(() => import("./components/hq/HqLayout"));
+const HqDashboard = lazy(() => import("./pages/hq/HqDashboard"));
+const HqProjects = lazy(() => import("./pages/hq/HqProjects"));
+const HqClients = lazy(() => import("./pages/hq/HqClients"));
+const HqFeed = lazy(() => import("./pages/hq/HqFeed"));
+const HqCalendar = lazy(() => import("./pages/hq/HqCalendar"));
+const HqPolls = lazy(() => import("./pages/hq/HqPolls"));
+const HqMembers = lazy(() => import("./pages/hq/HqMembers"));
+const Profile = lazy(() => import("./pages/Profile"));
+
+// Tela mostrada por instantes enquanto o arquivo da rota é baixado
+const RouteFallback = () => (
+  <div className="min-h-screen flex items-center justify-center bg-white dark:bg-navy-dark">
+    <div className="w-8 h-8 border-2 border-zinc-300 dark:border-white/20 border-t-blue-600 rounded-full animate-spin" />
+  </div>
+);
 
 const queryClient = new QueryClient();
 
@@ -81,6 +93,7 @@ const App = () => (
         <BrowserRouter>
           <RouteChangeHandler />
           <ErrorBoundary>
+            <Suspense fallback={<RouteFallback />}>
             <Routes>
               {/* Rota Institucional */}
               <Route path="/" element={<Index />} />
@@ -115,6 +128,7 @@ const App = () => (
               {/* Catch-all - Erro 404 */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </Suspense>
           </ErrorBoundary>
         </BrowserRouter>
         </TooltipProvider>

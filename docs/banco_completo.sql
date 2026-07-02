@@ -1,6 +1,13 @@
 -- ============================================================
 -- BANCO COMPLETO — VÉRTICE + THE VERTICE  (fonte única da verdade)
 -- ------------------------------------------------------------
+-- ATENÇÃO (2026-07-02): partes deste arquivo foram SUPERADAS pela
+-- migração supabase/migrations/20260702_seguranca_banco.sql, que:
+--   - remove o admin automático por e-mail (handle_new_user/is_admin);
+--   - cria a RPC approve_milestone e o trigger de progresso;
+--   - adiciona as políticas de Storage do bucket ifc-models.
+-- Se rodar este arquivo de novo, rode a migração DEPOIS dele.
+-- ------------------------------------------------------------
 -- Rode no painel Supabase -> SQL Editor -> New query -> Run.
 -- Pode rodar INTEIRO e quantas vezes quiser (é idempotente:
 -- "criar se não existir" + substitui regras antigas).

@@ -597,7 +597,7 @@ export default function ProjectDashboard() {
   const markRead = useCallback((id: string) => {
     setReadIds(prev => {
       const next = new Set(prev).add(id);
-      if (READ_KEY) { try { localStorage.setItem(READ_KEY, JSON.stringify([...next])); } catch {} }
+      if (READ_KEY) { try { localStorage.setItem(READ_KEY, JSON.stringify([...next])); } catch { /* storage cheio/indisponível: ignora */ } }
       return next;
     });
   }, [READ_KEY]);

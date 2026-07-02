@@ -101,12 +101,14 @@ function useClients() {
     if (error) {
       let msg = error.message;
       try {
-        const ctx = await (error as any).context?.json?.();
+        const withContext = error as { context?: { json?: () => Promise<{ error?: string }> } };
+        const ctx = await withContext.context?.json?.();
         if (ctx?.error) msg = ctx.error;
       } catch { /* mantém msg padrão */ }
       return { error: new Error(msg) };
     }
-    if ((data as any)?.error) return { error: new Error((data as any).error) };
+    const body = data as { error?: string } | null;
+    if (body?.error) return { error: new Error(body.error) };
     return { error: null };
   }
 
@@ -253,7 +255,7 @@ function NewClientModal({ onClose, onSave }: { onClose: () => void; onSave: () =
     setSaving(false);
 
     if (error) {
-      toast.error("Erro ao salvar cliente: " + (error as any).message);
+      toast.error("Erro ao salvar cliente: " + error.message);
     } else {
       toast.success(`Cliente "${form.name.trim()}" cadastrado com sucesso.`);
       onClose();
