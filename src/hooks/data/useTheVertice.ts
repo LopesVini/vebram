@@ -83,9 +83,13 @@ export function useTheVertice() {
   const [myProfile, setMyProfile] = useState<TheVerticeProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchAll = useCallback(async () => {
+  // silent = atualização em segundo plano: NÃO mostra o spinner de tela
+  // cheia. Só o primeiro carregamento (quando ainda não há nada na tela)
+  // liga o loading; curtir/votar/postar/apagar apenas atualizam os dados
+  // por baixo, mantendo o conteúdo visível.
+  const fetchAll = useCallback(async (silent = false) => {
     if (!user) return;
-    setLoading(true);
+    if (!silent) setLoading(true);
 
     const [pr, po, ev, pl] = await Promise.all([
       supabase.from("profiles").select("*").order("created_at"),
@@ -140,10 +144,11 @@ export function useTheVertice() {
     if (user) {
       fetchAll();
 
-      // Realtime subscription
+      // Realtime: mudanças feitas por OUTRAS pessoas chegam sozinhas.
+      // Sempre em modo silencioso — nunca deve piscar o spinner.
       const channel = supabase.channel("vertice-rt")
         .on("postgres_changes", { event: "*", schema: "public" }, () => {
-          fetchAll();
+          fetchAll(true);
         })
         .subscribe();
 
@@ -164,13 +169,13 @@ export function useTheVertice() {
       image,
       project_id: projectId || null,
     });
-    if (!error) fetchAll();
+    if (!error) fetchAll(true);
     return { error };
   };
 
   const deletePost = async (postId: string) => {
     const { error } = await supabase.from("posts").delete().eq("id", postId);
-    if (!error) fetchAll();
+    if (!error) fetchAll(true);
     return { error };
   };
 
@@ -182,11 +187,11 @@ export function useTheVertice() {
     const liked = post.likes.includes(user.id);
     if (liked) {
       const { error } = await supabase.from("post_likes").delete().eq("post_id", postId).eq("user_id", user.id);
-      if (!error) fetchAll();
+      if (!error) fetchAll(true);
       return { error };
     } else {
       const { error } = await supabase.from("post_likes").insert({ post_id: postId, user_id: user.id });
-      if (!error) fetchAll();
+      if (!error) fetchAll(true);
       return { error };
     }
   };
@@ -199,7 +204,7 @@ export function useTheVertice() {
       content,
       image,
     });
-    if (!error) fetchAll();
+    if (!error) fetchAll(true);
     return { error };
   };
 
@@ -211,13 +216,13 @@ export function useTheVertice() {
       type,
       note,
     });
-    if (!error) fetchAll();
+    if (!error) fetchAll(true);
     return { error };
   };
 
   const deleteEvent = async (eventId: string) => {
     const { error } = await supabase.from("events").delete().eq("id", eventId);
-    if (!error) fetchAll();
+    if (!error) fetchAll(true);
     return { error };
   };
 
@@ -237,7 +242,7 @@ export function useTheVertice() {
     }));
 
     const { error: optError } = await supabase.from("poll_options").insert(optionsToInsert);
-    if (!optError) fetchAll();
+    if (!optError) fetchAll(true);
     return { error: optError };
   };
 
@@ -253,7 +258,7 @@ export function useTheVertice() {
     if (hadVotedForThis) {
       // Remove vote
       const { error } = await supabase.from("poll_votes").delete().eq("poll_id", pollId).eq("user_id", user.id);
-      if (!error) fetchAll();
+      if (!error) fetchAll(true);
       return { error };
     } else {
       // Insert vote (upsert to handle if they already voted for another option in this poll)
@@ -262,7 +267,7 @@ export function useTheVertice() {
         option_id: optionId,
         user_id: user.id,
       }, { onConflict: "poll_id,user_id" });
-      if (!error) fetchAll();
+      if (!error) fetchAll(true);
       return { error };
     }
   };
@@ -282,7 +287,7 @@ export function useTheVertice() {
       tag,
       metadata: { ...myProfile?.metadata, role_title: roleTitle },
     }).eq("id", user.id);
-    if (!error) fetchAll();
+    if (!error) fetchAll(true);
     return { error };
   };
 
@@ -323,7 +328,7 @@ export function useTheVertice() {
       { user_id: user.id, date: new Date().toISOString().split("T")[0], type: "disponivel", note: "Disponível p/ compatibilização" },
     ]);
 
-    fetchAll();
+    fetchAll(true);
   };
 
   return {
@@ -333,7 +338,9 @@ export function useTheVertice() {
     polls,
     myProfile,
     loading,
-    refetch: fetchAll,
+    // Atualização manual (botão "atualizar") também é silenciosa: troca
+    // os dados sem apagar a tela. Ignora qualquer argumento de evento.
+    refetch: () => fetchAll(true),
     addPost,
     deletePost,
     toggleLike,
