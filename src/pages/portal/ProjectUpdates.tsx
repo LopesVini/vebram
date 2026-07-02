@@ -1,6 +1,8 @@
-import { FileText, CheckCircle, Clock, ArrowRight, MessageSquare, Loader2, Inbox } from "lucide-react";
+import { useState } from "react";
+import { CheckCircle, Clock, MessageSquare, Loader2, Inbox } from "lucide-react";
 import { useClientProject } from "@/hooks/data/useClientProject";
-import { useUpdates } from "@/hooks/data/useUpdates";
+import { useUpdates, type Update } from "@/hooks/data/useUpdates";
+import UpdateComments from "@/components/updates/UpdateComments";
 
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleString("pt-BR", {
@@ -9,9 +11,9 @@ function fmtDate(iso: string) {
 }
 
 const STATUS_MAP: Record<string, { label: string; cls: string }> = {
-  approved: { label: "Aprovado",       cls: "bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20" },
-  pending:  { label: "Ação Requerida", cls: "bg-accent/10 text-accent border border-accent/20" },
-  revision: { label: "Em Revisão",     cls: "bg-primary/10 text-primary border border-primary/20" },
+  approved: { label: "Aprovado",   cls: "bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20" },
+  pending:  { label: "Informativo", cls: "bg-accent/10 text-accent border border-accent/20" },
+  revision: { label: "Em Revisão", cls: "bg-primary/10 text-primary border border-primary/20" },
 };
 
 const DOT_MAP: Record<string, string> = {
@@ -19,6 +21,52 @@ const DOT_MAP: Record<string, string> = {
   pending:  "bg-accent",
   revision: "bg-primary",
 };
+
+// Cartão de uma entrega na timeline. A APROVAÇÃO não acontece aqui — ela vive
+// num único lugar (o painel de fases no Dashboard). Aqui é histórico + conversa.
+function TimelineCard({ upd }: { upd: Update }) {
+  const [showComments, setShowComments] = useState(false);
+
+  const statusKey = upd.color === "bg-green-500" ? "approved"
+    : upd.color === "bg-accent" ? "pending" : "revision";
+  const statusInfo = STATUS_MAP[statusKey] ?? STATUS_MAP.revision;
+  const dotColor   = DOT_MAP[statusKey] ?? "bg-primary";
+
+  return (
+    <div className="relative pl-8">
+      <div className={`absolute -left-[11px] top-1 w-5 h-5 rounded-full border-4 border-zinc-50 dark:border-navy-dark ${dotColor}`} />
+
+      <div className="bg-white dark:bg-navy-light/60 border border-zinc-200 dark:border-white/10 rounded-2xl p-6 shadow-lg hover:border-zinc-300 dark:hover:border-white/20 transition-colors">
+        <div className="mb-4">
+          <div className="flex items-center gap-3 mb-1">
+            <h2 className="text-xl font-black font-sans text-navy dark:text-white">{upd.title}</h2>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${statusInfo.cls}`}>
+              {statusInfo.label}
+            </span>
+          </div>
+          <p className="text-xs text-zinc-500">
+            {fmtDate(upd.created_at)} • <span className="text-navy dark:text-zinc-300">Publicado por {upd.author_name}</span>
+          </p>
+        </div>
+
+        {upd.content && (
+          <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-2 font-sans">{upd.content}</p>
+        )}
+
+        <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-white/5">
+          <button
+            onClick={() => setShowComments((v) => !v)}
+            className="text-xs font-bold text-zinc-500 hover:text-primary transition-colors flex items-center gap-2"
+          >
+            <MessageSquare size={14} /> {showComments ? "OCULTAR COMENTÁRIOS" : "COMENTAR"}
+          </button>
+        </div>
+
+        {showComments && <UpdateComments updateId={upd.id} />}
+      </div>
+    </div>
+  );
+}
 
 export default function ProjectUpdates() {
   const { project, loading: loadingProject } = useClientProject();
@@ -46,7 +94,7 @@ export default function ProjectUpdates() {
               <CheckCircle size={14} className="text-green-500" /> APROVADOS ({approvedCount})
             </div>
             <div className="flex items-center gap-2 text-xs font-bold px-3 text-navy dark:text-zinc-400">
-              <Clock size={14} className="text-accent" /> PENDENTES ({pendingCount})
+              <Clock size={14} className="text-accent" /> INFORMATIVOS ({pendingCount})
             </div>
           </div>
         )}
@@ -75,54 +123,9 @@ export default function ProjectUpdates() {
 
         {!loading && updates.length > 0 && (
           <div className="relative border-l-2 border-zinc-200 dark:border-white/10 ml-4 space-y-12 pb-8 mt-4">
-            {updates.map((upd) => {
-              // color field reused as status key for flexibility
-              const statusKey = upd.color === "bg-green-500" ? "approved"
-                : upd.color === "bg-accent" ? "pending" : "revision";
-              const statusInfo = STATUS_MAP[statusKey] ?? STATUS_MAP.revision;
-              const dotColor   = DOT_MAP[statusKey] ?? "bg-primary";
-
-              return (
-                <div key={upd.id} className="relative pl-8">
-                  <div className={`absolute -left-[11px] top-1 w-5 h-5 rounded-full border-4 border-zinc-50 dark:border-navy-dark ${dotColor}`} />
-
-                  <div className="bg-white dark:bg-navy-light/60 border border-zinc-200 dark:border-white/10 rounded-2xl p-6 shadow-lg hover:border-zinc-300 dark:hover:border-white/20 transition-colors">
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-4">
-                      <div>
-                        <div className="flex items-center gap-3 mb-1">
-                          <h2 className="text-xl font-black font-sans text-navy dark:text-white">{upd.title}</h2>
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${statusInfo.cls}`}>
-                            {statusInfo.label}
-                          </span>
-                        </div>
-                        <p className="text-xs text-zinc-500">
-                          {fmtDate(upd.created_at)} • <span className="text-navy dark:text-zinc-300">Publicado por {upd.author_name}</span>
-                        </p>
-                      </div>
-
-                      {statusKey === "pending" && (
-                        <button className="bg-accent text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-accent/90 transition-colors flex items-center gap-2 shadow-md">
-                          APROVAR ENTREGA <ArrowRight size={14} />
-                        </button>
-                      )}
-                    </div>
-
-                    {upd.content && (
-                      <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-6 font-sans">{upd.content}</p>
-                    )}
-
-                    <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-white/5 flex gap-4">
-                      <button className="text-xs font-bold text-zinc-500 hover:text-primary transition-colors flex items-center gap-2">
-                        <MessageSquare size={14} /> COMENTAR
-                      </button>
-                      <button className="text-xs font-bold text-zinc-500 hover:text-primary transition-colors flex items-center gap-2">
-                        <FileText size={14} /> VER DETALHES
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {updates.map((upd) => (
+              <TimelineCard key={upd.id} upd={upd} />
+            ))}
           </div>
         )}
       </div>

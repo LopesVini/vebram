@@ -585,10 +585,15 @@ export default function ProjectDashboard() {
 
   // Rastreia updates lidos via localStorage para persistir entre reloads
   const READ_KEY = project?.id ? `vertice_read_${project.id}` : null;
-  const [readIds, setReadIds] = useState<Set<string>>(() => {
-    if (!READ_KEY) return new Set();
-    try { return new Set(JSON.parse(localStorage.getItem(READ_KEY) ?? "[]")); } catch { return new Set(); }
-  });
+  const [readIds, setReadIds] = useState<Set<string>>(new Set());
+  // project.id chega de forma assíncrona; recarrega os "lidos" do localStorage
+  // quando ele fica disponível. Sem isto, o init rodava com project ainda nulo
+  // e a bolinha de "nova" reaparecia a cada reload/troca de aba.
+  useEffect(() => {
+    if (!READ_KEY) return;
+    try { setReadIds(new Set(JSON.parse(localStorage.getItem(READ_KEY) ?? "[]"))); }
+    catch { setReadIds(new Set()); }
+  }, [READ_KEY]);
   const markRead = useCallback((id: string) => {
     setReadIds(prev => {
       const next = new Set(prev).add(id);
@@ -752,6 +757,17 @@ INSTRUÇÕES:
                   {pendingApproval.length} FASE{pendingApproval.length > 1 ? "S" : ""} AGUARDANDO SUA APROVAÇÃO
                 </span>
               </div>
+              <p className="text-[11px] leading-relaxed text-amber-700 dark:text-amber-300/90 font-sans">
+                Consulte a aba{" "}
+                <button
+                  onClick={() => navigate("/portal/updates")}
+                  className="underline font-bold hover:text-amber-900 dark:hover:text-amber-200"
+                >
+                  Atualizações
+                </button>{" "}
+                para analisar a entrega e depois volte aqui para aprovar. Para pedir ajustes (não aprovar),
+                deixe um comentário na entrega.
+              </p>
               <div className="flex flex-col gap-1.5">
                 {pendingApproval.map(m => (
                   <div key={m.id} className="flex items-center justify-between gap-3">

@@ -10,6 +10,7 @@ import { useMilestones, calcProgress } from "@/hooks/data/useMilestones";
 import type { Milestone } from "@/hooks/data/useMilestones";
 import { useUpdates } from "@/hooks/data/useUpdates";
 import type { Update } from "@/hooks/data/useUpdates";
+import UpdateComments from "@/components/updates/UpdateComments";
 import { useProjectIfc, storagePath } from "@/hooks/data/useProjectIfc";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -439,6 +440,7 @@ function UpdatesTab({ projectId, authorName }: { projectId: string; authorName: 
                 </div>
                 {u.content && <p className="text-xs text-zinc-500 mt-1 leading-relaxed">{u.content}</p>}
                 <p className="text-[10px] text-zinc-400 mt-2">{fmtDate(u.created_at)} · {u.author_name}</p>
+                <UpdateComments updateId={u.id} />
               </div>
             );
           })}

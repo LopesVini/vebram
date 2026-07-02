@@ -10,14 +10,12 @@ export interface Contact {
 }
 
 export function useContacts() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const myRole =
-    user?.email?.includes("@vertice") || user?.email?.includes("admin")
-      ? "admin"
-      : "client";
+  // Cargo decidido por profiles.role (via useAuth), não pelo texto do e-mail.
+  const myRole = isAdmin ? "admin" : "client";
   const targetRole = myRole === "admin" ? "client" : "admin";
 
   const fetchContacts = useCallback(async () => {

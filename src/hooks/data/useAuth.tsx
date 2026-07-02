@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
+import { fetchRole, isAdminRole } from "@/lib/roles";
 
 interface UpdateProfileInput {
   display_name?: string;
@@ -13,6 +14,10 @@ interface AuthContextType {
   session: Session | null;
   user: User | null;
   loading: boolean;
+  /** Cargo de acesso vindo de profiles.role ('admin' | 'client' | null enquanto carrega). */
+  role: string | null;
+  /** true quando o usuário é da equipe (cargo admin). */
+  isAdmin: boolean;
   /** Nome de exibição vindo de user_metadata, com fallback para o prefixo do email. */
   displayName: string;
   /** Atualiza campos em user_metadata (display_name, phone, city, bio…). */
@@ -26,6 +31,8 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   user: null,
   loading: true,
+  role: null,
+  isAdmin: false,
   displayName: "",
   updateProfile: async () => ({ error: null }),
   updatePassword: async () => ({ error: null }),
@@ -35,25 +42,29 @@ const AuthContext = createContext<AuthContextType>({
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Aplica a sessão e, quando houver usuário, busca o cargo (profiles.role)
+    // ANTES de liberar a tela — assim o gate de admin nunca decide sem o cargo.
+    async function apply(session: Session | null) {
       setSession(session);
       setUser(session?.user ?? null);
+      setRole(session?.user ? await fetchRole(session.user.id) : null);
       setLoading(false);
-    });
+    }
+
+    supabase.auth.getSession().then(({ data: { session } }) => apply(session));
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    } = supabase.auth.onAuthStateChange((_event, session) => { apply(session); });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const isAdmin = useMemo(() => isAdminRole(role, user?.email), [role, user]);
 
   const displayName = useMemo(() => {
     const metaName = (user?.user_metadata?.display_name as string | undefined)?.trim();
@@ -79,7 +90,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <AuthContext.Provider
-      value={{ session, user, loading, displayName, updateProfile, updatePassword, signOut }}
+      value={{ session, user, loading, role, isAdmin, displayName, updateProfile, updatePassword, signOut }}
     >
       {children}
     </AuthContext.Provider>

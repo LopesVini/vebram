@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/data/useAuth";
+import { fetchRole, isAdminRole } from "@/lib/roles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,16 +20,16 @@ export default function ClientLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { session } = useAuth();
+  const { session, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (session) {
-      const isAdmin = session.user?.email?.includes('admin') || session.user?.email?.includes('@vertice');
+    // Redireciona pelo CARGO (profiles.role), já resolvido pelo useAuth.
+    if (!loading && session) {
       navigate(isAdmin ? "/hq" : "/portal", { replace: true });
     }
-  }, [session, navigate]);
+  }, [session, isAdmin, loading, navigate]);
 
   if (session) {
     return null; // Return null while navigating to avoid showing the login form
@@ -51,12 +52,13 @@ export default function ClientLogin() {
           variant: "destructive",
         });
       } else if (data.session) {
-        const isAdmin = data.session.user?.email?.includes('admin') || data.session.user?.email?.includes('@vertice');
+        const role = await fetchRole(data.session.user.id);
+        const admin = isAdminRole(role, data.session.user.email);
         toast({
           title: "Autenticado com sucesso",
-          description: isAdmin ? "Bem-vindo ao VerticeHQ." : "Bem-vindo à Área do Cliente Vertice.",
+          description: admin ? "Bem-vindo ao VerticeHQ." : "Bem-vindo à Área do Cliente Vertice.",
         });
-        navigate(isAdmin ? "/hq" : "/portal");
+        navigate(admin ? "/hq" : "/portal");
       }
     } catch (error) {
       toast({

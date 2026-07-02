@@ -1,10 +1,11 @@
 import { Navigate, Outlet, NavLink, Link, useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/data/useAuth";
-import { Loader2, LogOut, LayoutDashboard, Briefcase, Users, Search, Bell, Settings, Sun, Moon, UserCircle, CheckCheck, Plus, UserPlus, ArrowRight, Command } from "lucide-react";
+import { Loader2, LogOut, LayoutDashboard, Briefcase, Users, Search, Bell, Settings, Sun, Moon, UserCircle, CheckCheck, Plus, UserPlus, ArrowRight, Command, Rss, CalendarDays, BarChart3 } from "lucide-react";
 import { useTheme } from "@/components/layout/ThemeProvider";
 import VerticeLogo from "@/components/layout/VerticeLogo";
 import FloatingChat from "@/components/chat/FloatingChat";
+import { LightboxProvider } from "@/components/hq/thevertice/shared";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,6 +31,10 @@ const COMMANDS: Cmd[] = [
   { id: "dashboard",   label: "Dashboard",      desc: "Área principal do sistema",       icon: LayoutDashboard, path: "/hq",              category: "Navegar",  keywords: ["home","início","inicio","painel","principal","dashboard"] },
   { id: "projects",    label: "Ver Projetos",    desc: "Lista de todos os projetos",      icon: Briefcase,       path: "/hq/projects",     category: "Navegar",  keywords: ["projetos","obras","ver projetos","listar"] },
   { id: "clients",     label: "Ver Clientes",    desc: "Lista de todos os clientes",      icon: Users,           path: "/hq/clients",      category: "Navegar",  keywords: ["clientes","contatos","empresa","ver clientes"] },
+  { id: "feed",        label: "Mural",           desc: "Feed interno da equipe",          icon: Rss,             path: "/hq/feed",         category: "The Vertice", keywords: ["mural","feed","publicações","publicacoes","posts","the vertice"] },
+  { id: "calendar",    label: "Calendário",      desc: "Disponibilidade da equipe",       icon: CalendarDays,    path: "/hq/calendar",     category: "The Vertice", keywords: ["calendário","calendario","agenda","disponibilidade","férias","ferias"] },
+  { id: "polls",       label: "Enquetes",        desc: "Decisões e votações da equipe",    icon: BarChart3,       path: "/hq/polls",        category: "The Vertice", keywords: ["enquetes","votação","votacao","poll","decisões","decisoes"] },
+  { id: "members",     label: "Membros",         desc: "Sócios e equipe da rede",         icon: Users,           path: "/hq/members",      category: "The Vertice", keywords: ["membros","equipe","sócios","socios","time","members"] },
   { id: "profile",     label: "Meu Perfil",      desc: "Configurações da sua conta",      icon: UserCircle,      path: "/hq/profile",      category: "Navegar",  keywords: ["perfil","conta","configurações","settings","profile"] },
   { id: "new-project", label: "Criar Projeto",   desc: "Abrir formulário de novo projeto",icon: Plus,            path: "/hq/projects?new=1", category: "Ações",  keywords: ["criar projeto","novo projeto","adicionar projeto","new project","add project"] },
   { id: "new-client",  label: "Criar Cliente",   desc: "Cadastrar um novo cliente",       icon: UserPlus,        path: "/hq/clients?new=1",  category: "Ações",  keywords: ["criar cliente","novo cliente","adicionar cliente","cadastrar cliente","new client"] },
@@ -144,7 +149,7 @@ function CommandPalette({ onClose }: { onClose: () => void }) {
 const MOCK_NOTIFICATIONS: { id: number; title: string; desc: string; time: string; read: boolean }[] = [];
 
 export default function HqLayout() {
-  const { session, loading, signOut, displayName } = useAuth();
+  const { session, loading, isAdmin, signOut, displayName } = useAuth();
   const { theme, setTheme } = useTheme();
   const [showPalette, setShowPalette] = useState(false);
   const [showBell, setShowBell] = useState(false);
@@ -190,8 +195,7 @@ export default function HqLayout() {
     return <Navigate to="/login" replace />;
   }
 
-  // Verifica se é admin (contém 'admin' ou '@vertice' no email)
-  const isAdmin = session.user?.email?.includes('admin') || session.user?.email?.includes('@vertice');
+  // Acesso ao HQ é decidido pelo CARGO (profiles.role), não pelo texto do e-mail.
   if (!isAdmin) {
     return <Navigate to="/portal" replace />;
   }
@@ -216,6 +220,12 @@ export default function HqLayout() {
           <NavItem icon={<LayoutDashboard size={20} />} label="Dashboard" to="/hq" end />
           <NavItem icon={<Briefcase size={20} />} label="Projetos" to="/hq/projects" />
           <NavItem icon={<Users size={20} />} label="Clientes" to="/hq/clients" />
+
+          <p className="hidden lg:block text-xs font-bold text-zinc-400 mb-2 mt-4 px-4">THE VERTICE</p>
+          <NavItem icon={<Rss size={20} />} label="Mural" to="/hq/feed" />
+          <NavItem icon={<CalendarDays size={20} />} label="Calendário" to="/hq/calendar" />
+          <NavItem icon={<BarChart3 size={20} />} label="Enquetes" to="/hq/polls" />
+          <NavItem icon={<Users size={20} />} label="Membros" to="/hq/members" />
         </nav>
 
         {/* Bottom Section */}
@@ -344,7 +354,9 @@ export default function HqLayout() {
 
         {/* Page Content */}
         <div className="p-6 lg:p-8 flex-1">
-          <Outlet />
+          <LightboxProvider>
+            <Outlet />
+          </LightboxProvider>
         </div>
       </main>
 

@@ -6,5 +6,15 @@ const supabaseServiceKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXB
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Cliente com privilégios admin — bypassa RLS para operações privilegiadas
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+// Cliente com privilégios admin — bypassa RLS para operações privilegiadas.
+// IMPORTANTE: precisa ser "sem sessão" (persistSession/autoRefreshToken = false)
+// e com storageKey próprio. Sem isso, ele compartilhava o armazenamento de
+// login do cliente anônimo e acabava usando o TOKEN DO USUÁRIO logado no lugar
+// da chave de serviço — fazendo a aprovação de marcos falhar por RLS.
+export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+    storageKey: "vertice-admin-noauth",
+  },
+});
