@@ -53,7 +53,7 @@ export default function ClientLogin() {
         });
       } else if (data.session) {
         const role = await fetchRole(data.session.user.id);
-        const admin = isAdminRole(role, data.session.user.email);
+        const admin = isAdminRole(role);
         toast({
           title: "Autenticado com sucesso",
           description: admin ? "Bem-vindo ao VerticeHQ." : "Bem-vindo à Área do Cliente Vertice.",

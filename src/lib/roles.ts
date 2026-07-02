@@ -15,13 +15,11 @@ export async function fetchRole(userId: string): Promise<string | null> {
 }
 
 /**
- * Decide se é admin a partir do cargo. Mantém uma rede de segurança pelo
- * e-mail apenas quando o cargo ainda não foi gravado (role nulo) — assim
- * ninguém fica trancado para fora do HQ durante a transição.
+ * Decide se é admin a partir do cargo gravado no banco. O antigo
+ * fallback por e-mail ("@vertice") foi removido: ele permitia que
+ * qualquer conta com esse texto no e-mail entrasse no HQ. Todos os
+ * perfis existentes já têm role definido.
  */
-export function isAdminRole(role: string | null | undefined, email?: string | null): boolean {
-  if (role === "admin") return true;
-  if (role) return false; // cargo definido e não é admin → não é admin
-  const e = (email ?? "").toLowerCase();
-  return e.includes("@vertice");
+export function isAdminRole(role: string | null | undefined): boolean {
+  return role === "admin";
 }

@@ -64,7 +64,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const isAdmin = useMemo(() => isAdminRole(role, user?.email), [role, user]);
+  const isAdmin = useMemo(() => isAdminRole(role), [role]);
 
   const displayName = useMemo(() => {
     const metaName = (user?.user_metadata?.display_name as string | undefined)?.trim();

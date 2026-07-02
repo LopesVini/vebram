@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { supabase, supabaseAdmin } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 
 export interface Milestone {
   id: string;
@@ -54,18 +54,14 @@ export function useMilestones(projectId: string | null | undefined) {
 
   useEffect(() => { fetch(); }, [fetch]);
 
-  async function syncProgress(updated: Milestone[]) {
-    if (!projectId) return;
-    const progress = calcProgress(updated);
-    await supabaseAdmin.from("projects").update({ progress }).eq("id", projectId);
-  }
-
+  // O progresso do projeto (projects.progress) é recalculado por um
+  // TRIGGER no banco sempre que um marco muda — o navegador não precisa
+  // (e não deve) escrever esse campo diretamente.
   async function saveMilestone(m: Omit<Milestone, "id">) {
     const { data, error } = await supabase.from("milestones").insert(m).select().single();
     if (!error && data) {
       const updated = [...milestones, data as Milestone].sort((a, b) => a.sort_order - b.sort_order);
       setMilestones(updated);
-      await syncProgress(updated);
     }
     return { error };
   }
@@ -86,24 +82,19 @@ export function useMilestones(projectId: string | null | undefined) {
 
     const updated = milestones.map((m) => (m.id === id ? { ...m, ...changes } : m));
     setMilestones(updated);
-    await syncProgress(updated);
     return { error: null };
   }
 
   async function approveMilestone(id: string) {
-    const changes = { approved_at: new Date().toISOString(), status: "done" as const };
-    const { data, error } = await supabaseAdmin
-      .from("milestones")
-      .update(changes)
-      .eq("id", id)
-      .select();
-
+    // Função RPC no banco: valida que quem chama é admin ou o cliente
+    // dono do projeto e então grava approved_at/status com privilégio
+    // do servidor — substitui o antigo cliente service-role no navegador.
+    const { error } = await supabase.rpc("approve_milestone", { p_milestone_id: id });
     if (error) return { error };
-    if (!data || data.length === 0) return { error: new Error("Falha ao aprovar entrega.") };
 
+    const changes = { approved_at: new Date().toISOString(), status: "done" as const };
     const updated = milestones.map((m) => (m.id === id ? { ...m, ...changes } : m));
     setMilestones(updated);
-    await syncProgress(updated);
     return { error: null };
   }
 

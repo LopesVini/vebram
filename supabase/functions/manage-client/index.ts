@@ -5,7 +5,7 @@
 // Roda NO SERVIDOR do Supabase — a chave-mestra (service role)
 // fica secreta aqui e NUNCA vai para o navegador.
 //
-// Só sócios/equipe (e-mail com "@vertice" ou "admin") podem usar.
+// Só sócios/equipe (profiles.role = 'admin') podem usar.
 // O navegador chama isto com o token do usuário logado; validamos
 // esse token e o cargo antes de fazer qualquer coisa.
 // ============================================================
@@ -25,10 +25,6 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
-function isAdminEmail(email?: string | null): boolean {
-  const e = (email ?? "").toLowerCase();
-  return e.includes("@vertice") || e.includes("admin");
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -44,7 +40,15 @@ Deno.serve(async (req) => {
 
     const { data: caller, error: callerErr } = await admin.auth.getUser(token);
     if (callerErr || !caller?.user) return json({ error: "Sessão inválida." }, 401);
-    if (!isAdminEmail(caller.user.email)) {
+
+    // Cargo vem do banco (profiles.role), nunca do texto do e-mail —
+    // e-mail é escolhido pelo próprio usuário e não prova nada.
+    const { data: callerProfile } = await admin
+      .from("profiles")
+      .select("role")
+      .eq("id", caller.user.id)
+      .maybeSingle();
+    if (callerProfile?.role !== "admin") {
       return json({ error: "Apenas sócios podem gerenciar clientes." }, 403);
     }
 
