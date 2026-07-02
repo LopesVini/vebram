@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Send, ChevronLeft, Pin, PinOff, MessageSquare, Loader2, Trash2 } from "lucide-react";
-import { useContacts, Contact } from "@/hooks/useContacts";
-import { useChat } from "@/hooks/useChat";
-import { useAuth } from "@/hooks/useAuth";
+import { useContacts, Contact } from "@/hooks/data/useContacts";
+import { useChat } from "@/hooks/data/useChat";
+import { useAuth } from "@/hooks/data/useAuth";
 
 // ---------- Helpers ----------
 function initials(name: string) {

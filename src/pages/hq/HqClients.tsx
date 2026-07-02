@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Plus, Mail, Phone, MapPin, Briefcase, ChevronRight, Star, MoreHorizontal, X, UserPlus, Loader2, Inbox, Trash2, AlertTriangle } from "lucide-react";
+import { Search, Plus, Mail, Phone, MapPin, Briefcase, ChevronRight, Star, MoreHorizontal, X, UserPlus, Loader2, Inbox, Trash2, AlertTriangle, Eye, EyeOff, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 
@@ -94,38 +94,58 @@ function useClients() {
 
   useEffect(() => { load(); }, []);
 
-  async function addClient(form: { name: string; company: string; email: string; phone: string; city: string; status: ClientStatus; vip: boolean }) {
+  // Chama a Edge Function "manage-client" (roda no servidor, com a chave-mestra
+  // secreta) e extrai a mensagem de erro de forma amigável.
+  async function callManageClient(payload: Record<string, unknown>): Promise<{ error: Error | null }> {
+    const { data, error } = await supabase.functions.invoke("manage-client", { body: payload });
+    if (error) {
+      let msg = error.message;
+      try {
+        const withContext = error as { context?: { json?: () => Promise<{ error?: string }> } };
+        const ctx = await withContext.context?.json?.();
+        if (ctx?.error) msg = ctx.error;
+      } catch { /* mantém msg padrão */ }
+      return { error: new Error(msg) };
+    }
+    const body = data as { error?: string } | null;
+    if (body?.error) return { error: new Error(body.error) };
+    return { error: null };
+  }
+
+  async function addClient(form: { name: string; company: string; email: string; phone: string; city: string; status: ClientStatus; vip: boolean; password: string }) {
     const { data: existing } = await supabase
       .from("profiles")
       .select("id")
-      .eq("email", form.email.trim())
+      .eq("email", form.email.trim().toLowerCase())
       .maybeSingle();
 
+    // Já existe: atualiza os dados (não recria a conta de login).
     if (existing) {
-      const { error } = await supabase.from("profiles").update({
-        display_name: form.name.trim(),
-        metadata: { company: form.company, phone: form.phone, city: form.city, status: form.status, vip: form.vip },
-      }).eq("id", existing.id);
+      const { error } = await callManageClient({
+        action: "update",
+        id: existing.id,
+        name: form.name.trim(),
+        company: form.company, phone: form.phone, city: form.city, status: form.status, vip: form.vip,
+      });
       if (error) return { error };
       await load();
       return { error: null };
     }
 
-    // Profile-only insert (user must log in separately; no auth creation from browser)
-    const fakeId = crypto.randomUUID();
-    const { error } = await supabase.from("profiles").insert({
-      id: fakeId,
-      display_name: form.name.trim(),
-      email: form.email.trim(),
-      role: "client",
-      metadata: { company: form.company, phone: form.phone, city: form.city, status: form.status, vip: form.vip },
+    // Novo: cria a conta de login (com senha) + a ficha, no servidor.
+    const { error } = await callManageClient({
+      action: "create",
+      name: form.name.trim(),
+      email: form.email.trim().toLowerCase(),
+      password: form.password,
+      company: form.company, phone: form.phone, city: form.city, status: form.status, vip: form.vip,
     });
     if (!error) await load();
     return { error };
   }
 
   async function deleteClient(id: string) {
-    const { error } = await supabase.from("profiles").delete().eq("id", id);
+    const { error } = await callManageClient({ action: "delete", id });
     if (!error) setClients(prev => prev.filter(c => c.id !== id));
     return { error };
   }
@@ -202,12 +222,13 @@ function ClientCard({ client, index, onDelete }: { client: Client; index: number
 
 // ── New Client Modal ──────────────────────────────────────────────────────────
 
-const EMPTY = { name: "", company: "", email: "", phone: "", city: "", status: "Ativo" as ClientStatus, vip: false };
+const EMPTY = { name: "", company: "", email: "", phone: "", city: "", status: "Ativo" as ClientStatus, vip: false, password: "" };
 
 function NewClientModal({ onClose, onSave }: { onClose: () => void; onSave: () => void }) {
   const [form, setForm] = useState(EMPTY);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [showPw, setShowPw] = useState(false);
 
   function set(field: string, value: string | boolean) {
     setForm(f => ({ ...f, [field]: value }));
@@ -219,6 +240,8 @@ function NewClientModal({ onClose, onSave }: { onClose: () => void; onSave: () =
     if (!form.name.trim())  e.name  = "Informe o nome.";
     if (!form.email.trim()) e.email = "Informe o email.";
     else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = "Email inválido.";
+    if (!form.password)  e.password = "Defina uma senha de acesso.";
+    else if (form.password.length < 6) e.password = "A senha deve ter ao menos 6 caracteres.";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -232,7 +255,7 @@ function NewClientModal({ onClose, onSave }: { onClose: () => void; onSave: () =
     setSaving(false);
 
     if (error) {
-      toast.error("Erro ao salvar cliente: " + (error as any).message);
+      toast.error("Erro ao salvar cliente: " + error.message);
     } else {
       toast.success(`Cliente "${form.name.trim()}" cadastrado com sucesso.`);
       onClose();
@@ -285,6 +308,31 @@ function NewClientModal({ onClose, onSave }: { onClose: () => void; onSave: () =
 
             <MField label="Email *" error={errors.email} className="col-span-2">
               <input type="email" value={form.email} onChange={e => set("email", e.target.value)} placeholder="ex: contato@empresa.com" className="modal-input" />
+            </MField>
+
+            <MField label="Senha de acesso *" error={errors.password} className="col-span-2">
+              <div className="relative">
+                <KeyRound size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+                <input
+                  type={showPw ? "text" : "password"}
+                  value={form.password}
+                  onChange={e => set("password", e.target.value)}
+                  placeholder="mínimo 6 caracteres"
+                  autoComplete="new-password"
+                  className="modal-input"
+                  style={{ paddingLeft: "2rem", paddingRight: "2.5rem" }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPw(v => !v)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-navy dark:hover:text-white p-1"
+                  tabIndex={-1}
+                  aria-label={showPw ? "Ocultar senha" : "Mostrar senha"}
+                >
+                  {showPw ? <EyeOff size={14} /> : <Eye size={14} />}
+                </button>
+              </div>
+              <p className="text-[10px] text-zinc-400 mt-1">Você define a senha inicial e a repassa ao cliente (ele pode trocá-la depois).</p>
             </MField>
 
             <MField label="Telefone">

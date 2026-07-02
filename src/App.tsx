@@ -1,34 +1,50 @@
-import { useLayoutEffect } from "react";
+import { lazy, Suspense, useLayoutEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider } from "@/hooks/useAuth";
-import { ThemeProvider } from "@/components/ThemeProvider";
+import { AuthProvider } from "@/hooks/data/useAuth";
+import { ThemeProvider } from "@/components/layout/ThemeProvider";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
-import Index from "./pages/Index";
-import Sobre from "./pages/Sobre";
-import Servicos from "./pages/Servicos";
-import Projetos from "./pages/Projetos";
-import Processo from "./pages/Processo";
-import Orcamento from "./pages/Orcamento";
-import Contato from "./pages/Contato";
+import Index from "./pages/institutional/Index";
 import NotFound from "./pages/NotFound";
-import ErrorBoundary from "./components/ErrorBoundary";
-import ClientLogin from "./pages/ClientLogin";
-import PortalLayout from "./components/portal/PortalLayout";
-import ProjectDashboard from "./pages/portal/ProjectDashboard";
-import BimPlaceholder from "./pages/portal/BimPlaceholder";
-import ProjectUpdates from "./pages/portal/ProjectUpdates";
-import HqLayout from "./components/hq/HqLayout";
-import HqDashboard from "./pages/hq/HqDashboard";
-import HqProjects from "./pages/hq/HqProjects";
-import HqClients from "./pages/hq/HqClients";
-import Profile from "./pages/Profile";
+import ErrorBoundary from "./components/layout/ErrorBoundary";
+
+// Code splitting: cada página vira um arquivo separado que o navegador
+// só baixa quando a rota é visitada. Sem isso, quem abre a home baixava
+// o site inteiro (inclusive o visualizador 3D, com three.js + web-ifc).
+// A home (Index) continua no bundle principal para carregar na hora.
+const Sobre = lazy(() => import("./pages/institutional/Sobre"));
+const Servicos = lazy(() => import("./pages/institutional/Servicos"));
+const Projetos = lazy(() => import("./pages/institutional/Projetos"));
+const Processo = lazy(() => import("./pages/institutional/Processo"));
+const Orcamento = lazy(() => import("./pages/institutional/Orcamento"));
+const Contato = lazy(() => import("./pages/institutional/Contato"));
+const ClientLogin = lazy(() => import("./pages/portal/ClientLogin"));
+const PortalLayout = lazy(() => import("./components/portal/PortalLayout"));
+const ProjectDashboard = lazy(() => import("./pages/portal/ProjectDashboard"));
+const BimViewer = lazy(() => import("./pages/portal/BimViewer"));
+const ProjectUpdates = lazy(() => import("./pages/portal/ProjectUpdates"));
+const HqLayout = lazy(() => import("./components/hq/HqLayout"));
+const HqDashboard = lazy(() => import("./pages/hq/HqDashboard"));
+const HqProjects = lazy(() => import("./pages/hq/HqProjects"));
+const HqClients = lazy(() => import("./pages/hq/HqClients"));
+const HqFeed = lazy(() => import("./pages/hq/HqFeed"));
+const HqCalendar = lazy(() => import("./pages/hq/HqCalendar"));
+const HqPolls = lazy(() => import("./pages/hq/HqPolls"));
+const HqMembers = lazy(() => import("./pages/hq/HqMembers"));
+const Profile = lazy(() => import("./pages/Profile"));
+
+// Tela mostrada por instantes enquanto o arquivo da rota é baixado
+const RouteFallback = () => (
+  <div className="min-h-screen flex items-center justify-center bg-white dark:bg-navy-dark">
+    <div className="w-8 h-8 border-2 border-zinc-300 dark:border-white/20 border-t-blue-600 rounded-full animate-spin" />
+  </div>
+);
 
 const queryClient = new QueryClient();
 
@@ -77,6 +93,7 @@ const App = () => (
         <BrowserRouter>
           <RouteChangeHandler />
           <ErrorBoundary>
+            <Suspense fallback={<RouteFallback />}>
             <Routes>
               {/* Rota Institucional */}
               <Route path="/" element={<Index />} />
@@ -91,7 +108,7 @@ const App = () => (
               <Route path="/login" element={<ClientLogin />} />
               <Route path="/portal" element={<PortalLayout />}>
                 <Route index element={<ProjectDashboard />} />
-                <Route path="bim" element={<BimPlaceholder />} />
+                <Route path="bim" element={<BimViewer />} />
                 <Route path="updates" element={<ProjectUpdates />} />
                 <Route path="profile" element={<Profile />} />
               </Route>
@@ -101,12 +118,17 @@ const App = () => (
                 <Route index element={<HqDashboard />} />
                 <Route path="projects" element={<HqProjects />} />
                 <Route path="clients" element={<HqClients />} />
+                <Route path="feed" element={<HqFeed />} />
+                <Route path="calendar" element={<HqCalendar />} />
+                <Route path="polls" element={<HqPolls />} />
+                <Route path="members" element={<HqMembers />} />
                 <Route path="profile" element={<Profile />} />
               </Route>
 
               {/* Catch-all - Erro 404 */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </Suspense>
           </ErrorBoundary>
         </BrowserRouter>
         </TooltipProvider>

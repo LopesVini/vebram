@@ -151,12 +151,14 @@ function AnimatedNumber({ target, suffix = "" }: { target: number; suffix?: stri
 
 // ── Custom Tooltip ────────────────────────────────────────────────────────────
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+interface TooltipItem { name?: string; value?: number | string; color?: string }
+
+const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: TooltipItem[]; label?: string }) => {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-white dark:bg-navy border border-zinc-200 dark:border-white/10 rounded-xl px-3 py-2 shadow-xl text-xs">
       <p className="font-bold text-navy dark:text-white mb-1">{label}</p>
-      {payload.map((p: any, i: number) => (
+      {payload.map((p, i) => (
         <p key={i} style={{ color: p.color }}>{p.name}: <strong>{p.value}</strong></p>
       ))}
     </div>
