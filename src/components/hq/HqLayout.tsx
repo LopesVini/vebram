@@ -1,6 +1,7 @@
 import { Navigate, Outlet, NavLink, Link, useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/data/useAuth";
+import { useNotifications, timeAgo } from "@/hooks/data/useNotifications";
 import { Loader2, LogOut, LayoutDashboard, Briefcase, Users, Search, Bell, Settings, Sun, Moon, UserCircle, CheckCheck, Plus, UserPlus, ArrowRight, Command, Rss, CalendarDays, BarChart3 } from "lucide-react";
 import { useTheme } from "@/components/layout/ThemeProvider";
 import VerticeLogo from "@/components/layout/VerticeLogo";
@@ -146,18 +147,17 @@ function CommandPalette({ onClose }: { onClose: () => void }) {
   );
 }
 
-const MOCK_NOTIFICATIONS: { id: number; title: string; desc: string; time: string; read: boolean }[] = [];
-
 export default function HqLayout() {
   const { session, loading, isAdmin, signOut, displayName } = useAuth();
   const { theme, setTheme } = useTheme();
   const [showPalette, setShowPalette] = useState(false);
   const [showBell, setShowBell] = useState(false);
   const paletteRef = useRef<HTMLDivElement>(null);
-  const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
   const bellRef = useRef<HTMLDivElement>(null);
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  // Notificações reais (ex.: cliente comentou numa atualização),
+  // vindas do banco com chegada ao vivo via Realtime.
+  const { notifications, unreadCount, markRead, markAllRead } = useNotifications();
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -175,10 +175,6 @@ export default function HqLayout() {
     document.addEventListener("keydown", handleGlobalKey);
     return () => document.removeEventListener("keydown", handleGlobalKey);
   }, []);
-
-  function markAllRead() {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  }
 
   if (loading) {
     return (
@@ -308,17 +304,22 @@ export default function HqLayout() {
                     )}
                   </div>
                   <div className="max-h-80 overflow-y-auto divide-y divide-zinc-100 dark:divide-white/5">
+                    {notifications.length === 0 && (
+                      <p className="text-xs text-zinc-400 text-center py-8 px-4">
+                        Nenhuma notificação por aqui ainda.
+                      </p>
+                    )}
                     {notifications.map((n) => (
                       <div
                         key={n.id}
-                        onClick={() => setNotifications((prev) => prev.map((x) => x.id === n.id ? { ...x, read: true } : x))}
-                        className={`flex gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-zinc-50 dark:hover:bg-white/5 ${!n.read ? "bg-blue-50/50 dark:bg-blue-500/5" : ""}`}
+                        onClick={() => markRead(n.id)}
+                        className={`flex gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-zinc-50 dark:hover:bg-white/5 ${!n.read_at ? "bg-blue-50/50 dark:bg-blue-500/5" : ""}`}
                       >
-                        <div className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${n.read ? "bg-zinc-300 dark:bg-zinc-600" : "bg-blue-500"}`} />
+                        <div className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${n.read_at ? "bg-zinc-300 dark:bg-zinc-600" : "bg-blue-500"}`} />
                         <div className="flex-1 min-w-0">
-                          <p className={`text-xs font-bold truncate ${n.read ? "text-zinc-500 dark:text-zinc-400" : "text-navy dark:text-white"}`}>{n.title}</p>
-                          <p className="text-xs text-zinc-500 dark:text-zinc-500 mt-0.5 line-clamp-2">{n.desc}</p>
-                          <p className="text-[10px] text-zinc-400 mt-1">{n.time} atrás</p>
+                          <p className={`text-xs font-bold truncate ${n.read_at ? "text-zinc-500 dark:text-zinc-400" : "text-navy dark:text-white"}`}>{n.title}</p>
+                          <p className="text-xs text-zinc-500 dark:text-zinc-500 mt-0.5 line-clamp-2">{n.body}</p>
+                          <p className="text-[10px] text-zinc-400 mt-1">{timeAgo(n.created_at)}</p>
                         </div>
                       </div>
                     ))}
