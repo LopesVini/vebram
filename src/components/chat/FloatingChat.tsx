@@ -243,7 +243,7 @@ export default function FloatingChat() {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-8 right-8 w-14 h-14 bg-primary text-white rounded-full flex items-center justify-center shadow-2xl z-50 hover:shadow-primary/50 transition-shadow"
+        className="fixed bottom-[4.5rem] right-4 lg:bottom-8 lg:right-8 w-12 h-12 lg:w-14 lg:h-14 bg-primary text-white rounded-full flex items-center justify-center shadow-2xl z-50 hover:shadow-primary/50 transition-shadow"
       >
         <MessageSquare size={24} />
         {totalUnread > 0 && (
@@ -274,10 +274,12 @@ export default function FloatingChat() {
           style={{
             position: "fixed",
             ...(isPinned
-              ? { bottom: "2rem", right: "2rem" }
+              ? window.innerWidth < 1024
+                ? { bottom: "4.5rem", right: "0.5rem" }
+                : { bottom: "2rem", right: "2rem" }
               : { top: "20%", left: "50%", x: "-50%" }),
           }}
-          className={`w-[350px] bg-white dark:bg-[#151515] border border-zinc-200 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 flex flex-col h-[500px] ${
+          className={`w-[calc(100vw-1rem)] max-w-[350px] bg-white dark:bg-[#151515] border border-zinc-200 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 flex flex-col h-[500px] ${
             !isPinned ? "cursor-grab active:cursor-grabbing" : ""
           }`}
         >
