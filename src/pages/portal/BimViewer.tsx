@@ -422,7 +422,7 @@ export default function BimViewer() {
   }, [projectLoading, project?.ifc_url, project?.name, loadFromBuffer, loadDemo]);
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-7rem)] -mx-3 -mt-[4.5rem] -mb-24 pt-14 lg:m-0 lg:pt-0 lg:h-[calc(100vh-6rem)] w-auto lg:w-full font-mono text-zinc-300 relative gap-0 lg:gap-6">
+    <div className="flex flex-col h-[calc(100dvh-3.5rem-env(safe-area-inset-bottom))] -mx-3 -mt-[4.5rem] -mb-24 pt-14 lg:m-0 lg:pt-0 lg:h-[calc(100vh-6rem)] w-auto lg:w-full font-mono text-zinc-300 relative gap-0 lg:gap-6">
 
       {/* Header */}
       <div className="hidden lg:flex justify-between items-end border-b border-zinc-200 dark:border-white/5 pb-4 mb-2">
@@ -484,7 +484,7 @@ export default function BimViewer() {
               )}
             </div>
 
-            <div className="flex flex-col gap-2 pointer-events-auto">
+            <div className="ml-auto flex flex-col gap-2 pointer-events-auto">
               <button onClick={fitToModel} className="w-10 h-10 bg-white dark:bg-navy-light/80 border border-zinc-200 dark:border-white/10 rounded-lg flex items-center justify-center text-zinc-500 hover:text-navy dark:hover:text-white hover:border-primary transition-colors shadow-lg" title="Enquadrar">
                 <Maximize2 size={16} />
               </button>
