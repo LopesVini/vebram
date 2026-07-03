@@ -256,12 +256,12 @@ export default function HqLayout() {
         
         {/* Top Header */}
         <header className="h-14 px-3 lg:h-24 lg:px-8 flex items-center justify-between sticky top-0 bg-[#F8FAFC]/80 dark:bg-navy-dark/80 backdrop-blur-md z-30">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 min-w-0">
             <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-full bg-zinc-200 dark:bg-white/10 flex items-center justify-center overflow-hidden">
                <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.email}`} alt="Avatar" className="w-full h-full object-cover" />
             </div>
-            <div>
-              <h2 className="text-sm font-bold text-navy dark:text-white leading-tight">Olá, {displayName}</h2>
+            <div className="min-w-0">
+              <h2 className="text-sm font-bold text-navy dark:text-white leading-tight truncate">Olá, {displayName}</h2>
               <p className="hidden lg:block text-xs text-zinc-500">{new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
             </div>
           </div>
@@ -295,7 +295,7 @@ export default function HqLayout() {
               </button>
 
               {showBell && (
-                <div className="absolute right-0 top-12 w-80 max-w-[calc(100vw-1.5rem)] bg-white dark:bg-navy-light border border-zinc-200 dark:border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden">
+                <div className="fixed inset-x-3 top-16 w-auto lg:absolute lg:inset-x-auto lg:right-0 lg:top-12 lg:w-80 bg-white dark:bg-navy-light border border-zinc-200 dark:border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden">
                   <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100 dark:border-white/5">
                     <span className="font-bold text-sm text-navy dark:text-white">Notificações</span>
                     {unreadCount > 0 && (
