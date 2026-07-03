@@ -22,6 +22,7 @@ export default function BimBottomSheet({ children }: { children: React.ReactNode
   }
 
   function onPointerDown(e: React.PointerEvent) {
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
     dragStartY.current = e.clientY;
     dragged.current = false;
   }

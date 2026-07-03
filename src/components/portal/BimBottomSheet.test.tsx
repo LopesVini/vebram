@@ -30,4 +30,14 @@ describe("BimBottomSheet", () => {
     fireEvent.pointerUp(handle, { clientY: 600 }); // -100px = swipe up
     expect(sheet.dataset.state).toBe("half");
   });
+
+  it("swipe não dispara o clique fantasma que mudaria o estado de novo", () => {
+    render(<BimBottomSheet><p>x</p></BimBottomSheet>);
+    const sheet = screen.getByTestId("bim-bottom-sheet");
+    const handle = screen.getByRole("button", { name: /painel do modelo/i });
+    fireEvent.pointerDown(handle, { clientY: 700 });
+    fireEvent.pointerUp(handle, { clientY: 600 }); // swipe up → half
+    fireEvent.click(handle); // clique sintético que o browser emite após pointerup
+    expect(sheet.dataset.state).toBe("half"); // não avançou para full
+  });
 });
