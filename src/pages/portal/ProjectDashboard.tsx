@@ -363,7 +363,7 @@ function ProjectEvolution({
   }
 
   return (
-    <div className="grid grid-cols-12 gap-2 w-full h-full relative overflow-visible lg:overflow-hidden">
+    <div className="grid grid-cols-12 gap-2 w-full h-auto lg:h-full relative overflow-visible lg:overflow-hidden">
       {/* Subtle blueprint background */}
       <div
         className="absolute inset-0 pointer-events-none opacity-40 rounded-xl"
@@ -465,7 +465,7 @@ function ProjectEvolution({
       </div>
 
       {/* CENTER: animated scene */}
-      <div className="col-span-12 lg:col-span-5 relative z-10 flex items-center justify-center min-h-0">
+      <div className="col-span-12 lg:col-span-5 relative z-10 flex items-center justify-center min-h-[16rem] lg:min-h-0">
         <PhaseScene key={selectedId ?? "x"} kind={selectedKind} color={selectedColor} />
       </div>
 
@@ -697,7 +697,7 @@ INSTRUÇÕES:
   }
 
   return (
-    <div ref={containerRef} className="flex flex-col gap-3 font-mono text-zinc-300 h-[calc(100vh-4rem)] overflow-hidden">
+    <div ref={containerRef} className="flex flex-col gap-3 font-mono text-zinc-300 h-auto lg:h-[calc(100vh-4rem)] overflow-visible lg:overflow-hidden">
 
       {/* Header */}
       <div className="gsap-card flex justify-between items-center border-b border-zinc-200 dark:border-white/10 pb-3 shrink-0">
@@ -722,13 +722,13 @@ INSTRUÇÕES:
       </div>
 
       {/* Linha principal */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 flex-1 min-h-0">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 flex-none lg:flex-1 min-h-0">
 
         {/* Col esq: Chart + Marcos */}
         <div className="lg:col-span-2 flex flex-col gap-3 min-h-0">
 
           {/* Progress Panel */}
-          <div className="gsap-card bg-white dark:bg-navy-light/60 border border-zinc-200 dark:border-white/15 rounded-2xl p-4 flex flex-col shadow-lg flex-1 min-h-0 overflow-hidden">
+          <div className="gsap-card bg-white dark:bg-navy-light/60 border border-zinc-200 dark:border-white/15 rounded-2xl p-4 flex flex-col shadow-lg flex-none lg:flex-1 min-h-0 overflow-visible lg:overflow-hidden">
             <div className="flex items-center justify-between mb-3 shrink-0">
               <div>
                 <p className="text-[10px] font-bold tracking-widest text-zinc-600 dark:text-zinc-300">EVOLUÇÃO DO PROJETO</p>
@@ -740,7 +740,7 @@ INSTRUÇÕES:
                 </div>
               </div>
             </div>
-            <div className="flex-1 min-h-0 relative overflow-hidden">
+            <div className="flex-none lg:flex-1 min-h-0 relative overflow-visible lg:overflow-hidden">
               <ProjectEvolution milestones={milestones} progress={calculatedProgress} />
             </div>
           </div>
@@ -868,7 +868,7 @@ INSTRUÇÕES:
         <div className="flex flex-col gap-3 min-h-0">
 
           {/* AI Chat */}
-          <div className="gsap-card relative bg-white dark:bg-navy-light/60 border border-zinc-200 dark:border-white/15 rounded-2xl shadow-lg flex flex-col flex-[1.6] min-h-0 overflow-hidden">
+          <div className="gsap-card relative bg-white dark:bg-navy-light/60 border border-zinc-200 dark:border-white/15 rounded-2xl shadow-lg flex flex-col flex-none h-[26rem] lg:flex-[1.6] lg:h-auto min-h-0 overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none" />
             <div className="relative flex justify-between items-center px-3 py-2.5 border-b border-zinc-200 dark:border-white/10 shrink-0">
               <div className="flex items-center gap-2">
@@ -950,7 +950,7 @@ INSTRUÇÕES:
           </div>
 
           {/* Atualizações */}
-          <div className="gsap-card bg-white dark:bg-navy-light/60 border border-zinc-200 dark:border-white/15 rounded-2xl shadow-lg flex flex-col overflow-hidden flex-[1.1] min-h-0">
+          <div className="gsap-card bg-white dark:bg-navy-light/60 border border-zinc-200 dark:border-white/15 rounded-2xl shadow-lg flex flex-col overflow-hidden flex-none h-[22rem] lg:flex-[1.1] lg:h-auto min-h-0">
             <div className="px-3 py-2 border-b border-zinc-200 dark:border-white/10 flex justify-between items-center bg-zinc-50 dark:bg-black/20 shrink-0">
               <div className="flex items-center gap-2">
                 <div className="bg-accent text-white text-[9px] font-bold px-1.5 py-0.5 rounded">{updates.length}</div>
