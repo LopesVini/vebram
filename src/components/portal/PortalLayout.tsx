@@ -4,6 +4,7 @@ import { Loader2, LogOut, LayoutDashboard, Box, History, MoreVertical, User, Use
 import { useTheme } from "@/components/layout/ThemeProvider";
 import VerticeLogo from "@/components/layout/VerticeLogo";
 import FloatingChat from "@/components/chat/FloatingChat";
+import MobileTabBar from "@/components/layout/MobileTabBar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,7 +38,7 @@ export default function PortalLayout() {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-navy-dark text-navy dark:text-white flex transition-colors duration-300">
       {/* Sidebar minimalista */}
-      <aside className="w-20 lg:w-64 border-r border-zinc-200 dark:border-white/5 bg-white/50 dark:bg-navy/20 flex flex-col h-screen sticky top-0 backdrop-blur-xl z-40 transition-all duration-300">
+      <aside className="hidden lg:flex lg:w-64 border-r border-zinc-200 dark:border-white/5 bg-white/50 dark:bg-navy/20 flex flex-col h-screen sticky top-0 backdrop-blur-xl z-40 transition-all duration-300">
         <div className="h-20 flex items-center justify-center lg:justify-start lg:px-8 border-b border-zinc-200 dark:border-white/5">
           <VerticeLogo className="w-9 h-9 shrink-0" />
           <span className="hidden lg:block ml-3 font-sans font-bold tracking-widest uppercase text-navy dark:text-white">
@@ -115,13 +116,39 @@ export default function PortalLayout() {
         </div>
       </aside>
 
+      {/* Header mobile: logo + tema (a sidebar some abaixo de lg) */}
+      <header className="lg:hidden fixed top-0 inset-x-0 z-40 h-14 px-3 flex items-center justify-between bg-white/95 dark:bg-navy-dark/95 backdrop-blur-md border-b border-zinc-200 dark:border-white/10">
+        <div className="flex items-center gap-2">
+          <VerticeLogo className="w-7 h-7" />
+          <span className="font-sans font-bold tracking-widest uppercase text-sm text-navy dark:text-white">
+            Vertice
+          </span>
+        </div>
+        <button
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          className="w-10 h-10 flex items-center justify-center rounded-full text-zinc-500 hover:text-navy dark:hover:text-white transition-colors"
+          aria-label="Alternar tema"
+        >
+          {theme === "dark" ? <Moon size={18} /> : <Sun size={18} />}
+        </button>
+      </header>
+
       {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto">
-        <div className="p-6 lg:p-8 w-full mx-auto relative z-10">
+        <div className="px-3 pt-[4.5rem] pb-24 lg:p-8 w-full mx-auto relative z-10">
           <Outlet />
         </div>
       </main>
-      
+
+      <MobileTabBar
+        tabs={[
+          { icon: <LayoutDashboard size={20} />, label: "Início", to: "/portal", end: true },
+          { icon: <Box size={20} />, label: "BIM", to: "/portal/bim" },
+          { icon: <History size={20} />, label: "Novidades", to: "/portal/updates" },
+          { icon: <UserCircle size={20} />, label: "Perfil", to: "/portal/profile" },
+        ]}
+      />
+
       <FloatingChat />
     </div>
   );
