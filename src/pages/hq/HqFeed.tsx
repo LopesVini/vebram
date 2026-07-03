@@ -227,7 +227,7 @@ function PostCard({
   }
 
   return (
-    <Card className="p-5">
+    <Card className="p-3 lg:p-5 !rounded-xl lg:!rounded-2xl">
       <div className="flex items-center gap-3 mb-3">
         <Avatar id={post.author_id} name={profileName(authorProfile)} />
         <div className="flex-1 min-w-0">
@@ -263,13 +263,13 @@ function PostCard({
 
       <div className="mt-3 pt-3 border-t border-zinc-100 dark:border-white/5 flex items-center gap-1">
         <StatButton active={liked} activeClass="text-red-500" onClick={() => onLike(post.id)}>
-          <Heart size={17} className={liked ? "fill-red-500" : ""} /> {post.likes.length}
+          <Heart size={17} className={`w-4 h-4 lg:w-[17px] lg:h-[17px] ${liked ? "fill-red-500" : ""}`} /> {post.likes.length}
         </StatButton>
         <StatButton onClick={toggleComments}>
-          <MessageCircle size={17} /> {post.comments.length}
+          <MessageCircle size={17} className="w-4 h-4 lg:w-[17px] lg:h-[17px]" /> {post.comments.length}
         </StatButton>
         <StatButton onClick={toggleComments}>
-          <Eye size={17} /> {post.views || 0}
+          <Eye size={17} className="w-4 h-4 lg:w-[17px] lg:h-[17px]" /> {post.views || 0}
         </StatButton>
         <button
           onClick={share}
@@ -312,7 +312,7 @@ function PostCard({
                       src={cm.image}
                       alt="anexo"
                       onClick={() => lightbox(cm.image!)}
-                      className="mt-2 rounded-xl max-w-[260px] max-h-[210px] object-cover border border-zinc-200 dark:border-white/10 cursor-zoom-in"
+                      className="mt-2 rounded-xl max-w-full lg:max-w-[260px] max-h-[280px] lg:max-h-[210px] w-full lg:w-auto object-cover border border-zinc-200 dark:border-white/10 cursor-zoom-in"
                     />
                   )}
                 </div>
@@ -375,7 +375,7 @@ function StatButton({
   return (
     <button
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 text-[13px] font-semibold px-2.5 py-1.5 rounded-full transition-colors hover:bg-zinc-100 dark:hover:bg-white/5 ${
+      className={`inline-flex items-center gap-1.5 text-xs lg:text-[13px] font-semibold p-2 lg:px-2.5 lg:py-1.5 rounded-full transition-colors hover:bg-zinc-100 dark:hover:bg-white/5 ${
         active ? activeClass : "text-zinc-500 hover:text-navy dark:hover:text-white"
       }`}
     >
@@ -475,6 +475,7 @@ function NewPostModal({
               profiles={tv.profiles}
               rows={5}
               placeholder="Descreva a atualização, decisão, prazo… Digite @ para mencionar colegas."
+              className="min-h-0 h-10 focus:h-auto lg:h-auto"
             />
           </div>
           <div>

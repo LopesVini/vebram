@@ -184,7 +184,7 @@ export default function HqDashboard() {
     <div className="w-full max-w-[1400px] mx-auto space-y-6">
 
       {/* ── Stats Row ─────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-4">
         {statCards.map((stat, i) => {
           const Icon = stat.icon;
           return (
@@ -203,7 +203,7 @@ export default function HqDashboard() {
                   <TrendingUp size={10} /> {stat.trend}
                 </div>
               </div>
-              <p className="text-2xl font-black text-navy dark:text-white mb-1">
+              <p className="text-lg lg:text-2xl font-black text-navy dark:text-white mb-1">
                 {loading ? "—" : <AnimatedNumber target={stat.value} suffix={stat.suffix} />}
               </p>
               <p className="text-xs text-zinc-500">{stat.label}</p>
@@ -220,7 +220,7 @@ export default function HqDashboard() {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.3, duration: 0.5 }}
-          className="bg-white dark:bg-navy-light/40 border border-zinc-200 dark:border-white/10 rounded-2xl p-6 shadow-sm"
+          className="bg-white dark:bg-navy-light/40 border border-zinc-200 dark:border-white/10 rounded-2xl p-4 lg:p-6 shadow-sm"
         >
           <div className="flex justify-between items-center mb-6">
             <div>
@@ -299,13 +299,13 @@ export default function HqDashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35, duration: 0.5 }}
-          className="bg-white dark:bg-navy-light/40 border border-zinc-200 dark:border-white/10 rounded-2xl p-6 shadow-sm flex flex-col"
+          className="bg-white dark:bg-navy-light/40 border border-zinc-200 dark:border-white/10 rounded-2xl p-4 lg:p-6 shadow-sm flex flex-col"
         >
           <div className="mb-6">
             <h3 className="font-bold text-sm text-navy dark:text-white">Projetos por Mês</h3>
             <p className="text-xs text-zinc-500 mt-0.5">Projetos cadastrados em {new Date().getFullYear()}</p>
           </div>
-          <div className="flex-1 min-h-[220px]">
+          <div className="flex-1 min-h-[200px] lg:min-h-[220px]">
             {barData.length === 0 || barData.every(d => d.value === 0) ? (
               <div className="h-full flex flex-col items-center justify-center gap-2 text-zinc-400">
                 <Inbox size={28} className="opacity-40" />
@@ -348,7 +348,7 @@ export default function HqDashboard() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.4, duration: 0.5 }}
-            className="bg-white dark:bg-navy-light/40 border border-zinc-200 dark:border-white/10 rounded-2xl p-6 shadow-sm"
+            className="bg-white dark:bg-navy-light/40 border border-zinc-200 dark:border-white/10 rounded-2xl p-4 lg:p-6 shadow-sm"
           >
             <h3 className="font-bold text-sm text-navy dark:text-white mb-1">Distribuição por Disciplina</h3>
             <p className="text-xs text-zinc-500 mb-4">Portfólio atual de serviços</p>
@@ -388,7 +388,7 @@ export default function HqDashboard() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.5, duration: 0.5 }}
-            className="bg-white dark:bg-navy-light/40 border border-zinc-200 dark:border-white/10 rounded-2xl p-6 shadow-sm flex-1"
+            className="bg-white dark:bg-navy-light/40 border border-zinc-200 dark:border-white/10 rounded-2xl p-4 lg:p-6 shadow-sm flex-1"
           >
             <h3 className="font-bold text-sm text-navy dark:text-white mb-4">Atualizações Recentes</h3>
             {recentUpdates.length === 0 ? (
