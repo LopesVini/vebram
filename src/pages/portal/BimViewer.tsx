@@ -6,6 +6,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three-stdlib";
 import { IfcAPI, FlatMesh } from "web-ifc";
 import { useClientProject } from "@/hooks/data/useClientProject";
+import BimBottomSheet from "@/components/portal/BimBottomSheet";
 
 const DEMO_IFC_URL = "/models/demo.ifc";
 
@@ -294,6 +295,50 @@ function TreeNodeView({ node, depth = 0 }: { node: SpatialNode; depth?: number }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Painel (busca + hierarquia + info) — compartilhado pelo painel desktop e
+// pela bottom sheet mobile
+// ─────────────────────────────────────────────────────────────────────────────
+function PanelContent({
+  search, setSearch, tree, info, loading,
+}: {
+  search: string;
+  setSearch: (v: string) => void;
+  tree: SpatialNode | null;
+  info: ModelInfo | null;
+  loading: boolean;
+}) {
+  return (
+    <>
+      <div className="relative mb-4">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+        <input
+          type="text" value={search} onChange={e => setSearch(e.target.value)}
+          placeholder="Buscar elementos..."
+          className="w-full bg-zinc-50 dark:bg-black/20 border border-zinc-200 dark:border-white/10 rounded-lg pl-9 pr-4 py-2 text-xs text-navy dark:text-white focus:outline-none focus:border-primary transition-colors"
+        />
+      </div>
+
+      <div className="flex-1 overflow-y-auto pr-1">
+        <p className="text-[10px] font-bold text-zinc-500 mb-2 tracking-widest">HIERARQUIA DO PROJETO</p>
+        {!tree && !loading && (
+          <p className="text-xs text-zinc-400 px-2 py-3">Sem modelo carregado.</p>
+        )}
+        {tree && <TreeNodeView node={tree} />}
+      </div>
+
+      {info && (
+        <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-white/10 text-[10px] text-zinc-500 space-y-1">
+          <div className="flex justify-between"><span>Arquivo</span><span className="text-navy dark:text-white truncate ml-2 max-w-[180px]" title={info.name}>{info.name}</span></div>
+          <div className="flex justify-between"><span>Meshes</span><span className="text-navy dark:text-white">{info.meshCount}</span></div>
+          <div className="flex justify-between"><span>Triângulos</span><span className="text-navy dark:text-white">{info.triangleCount.toLocaleString("pt-BR")}</span></div>
+          <div className="flex justify-between"><span>Dimensões</span><span className="text-navy dark:text-white">{info.bbox.width.toFixed(1)} × {info.bbox.height.toFixed(1)} × {info.bbox.depth.toFixed(1)} m</span></div>
+        </div>
+      )}
+    </>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Main page
 // ─────────────────────────────────────────────────────────────────────────────
 export default function BimViewer() {
@@ -308,6 +353,14 @@ export default function BimViewer() {
   const [tree, setTree]         = useState<SpatialNode | null>(null);
   const [search, setSearch]     = useState("");
   const [isProjectModel, setIsProjectModel] = useState(false);
+  const [showPill, setShowPill] = useState(true);
+
+  useEffect(() => {
+    if (!info) return;
+    setShowPill(true);
+    const t = setTimeout(() => setShowPill(false), 3000);
+    return () => clearTimeout(t);
+  }, [info]);
 
   const loadFromBuffer = useCallback(async (buffer: ArrayBuffer, sourceName: string, fromProject = false) => {
     setLoading(true);
@@ -369,10 +422,10 @@ export default function BimViewer() {
   }, [projectLoading, project?.ifc_url, project?.name, loadFromBuffer, loadDemo]);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-6rem)] w-full font-mono text-zinc-300 relative gap-6">
+    <div className="flex flex-col h-[calc(100dvh-7rem)] -mx-3 -mt-[4.5rem] -mb-24 pt-14 lg:m-0 lg:pt-0 lg:h-[calc(100vh-6rem)] w-auto lg:w-full font-mono text-zinc-300 relative gap-0 lg:gap-6">
 
       {/* Header */}
-      <div className="flex justify-between items-end border-b border-zinc-200 dark:border-white/5 pb-4 mb-2">
+      <div className="hidden lg:flex justify-between items-end border-b border-zinc-200 dark:border-white/5 pb-4 mb-2">
         <div className="flex items-center gap-4">
           <div className="bg-accent/20 text-accent px-3 py-1 rounded-[0.25rem] font-bold text-sm">[ IFC ]</div>
           <h1 className="text-3xl font-black tracking-tighter text-navy dark:text-white uppercase font-sans">
@@ -389,44 +442,31 @@ export default function BimViewer() {
         </div>
       </div>
 
-      <div className="flex flex-1 gap-6 min-h-0">
+      <div className="flex flex-1 gap-0 lg:gap-6 min-h-0">
 
         {/* Sidebar / Tree View */}
-        <div className="w-80 bg-white dark:bg-navy-light/60 border border-zinc-200 dark:border-white/15 rounded-2xl p-4 flex flex-col shadow-lg overflow-hidden">
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-            <input
-              type="text" value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Buscar elementos..."
-              className="w-full bg-zinc-50 dark:bg-black/20 border border-zinc-200 dark:border-white/10 rounded-lg pl-9 pr-4 py-2 text-xs text-navy dark:text-white focus:outline-none focus:border-primary transition-colors"
-            />
-          </div>
-
-          <div className="flex-1 overflow-y-auto pr-1">
-            <p className="text-[10px] font-bold text-zinc-500 mb-2 tracking-widest">HIERARQUIA DO PROJETO</p>
-            {!tree && !loading && (
-              <p className="text-xs text-zinc-400 px-2 py-3">Sem modelo carregado.</p>
-            )}
-            {tree && <TreeNodeView node={tree} />}
-          </div>
-
-          {info && (
-            <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-white/10 text-[10px] text-zinc-500 space-y-1">
-              <div className="flex justify-between"><span>Arquivo</span><span className="text-navy dark:text-white truncate ml-2 max-w-[180px]" title={info.name}>{info.name}</span></div>
-              <div className="flex justify-between"><span>Meshes</span><span className="text-navy dark:text-white">{info.meshCount}</span></div>
-              <div className="flex justify-between"><span>Triângulos</span><span className="text-navy dark:text-white">{info.triangleCount.toLocaleString("pt-BR")}</span></div>
-              <div className="flex justify-between"><span>Dimensões</span><span className="text-navy dark:text-white">{info.bbox.width.toFixed(1)} × {info.bbox.height.toFixed(1)} × {info.bbox.depth.toFixed(1)} m</span></div>
-            </div>
-          )}
+        <div className="hidden lg:flex w-80 bg-white dark:bg-navy-light/60 border border-zinc-200 dark:border-white/15 rounded-2xl p-4 flex-col shadow-lg overflow-hidden">
+          <PanelContent search={search} setSearch={setSearch} tree={tree} info={info} loading={loading} />
         </div>
 
         {/* 3D Viewer */}
-        <div className="flex-1 bg-zinc-100 dark:bg-[#0A0A0E] border border-zinc-200 dark:border-white/15 rounded-2xl relative overflow-hidden shadow-inner">
+        <div className="flex-1 bg-zinc-100 dark:bg-[#0A0A0E] border-y lg:border border-zinc-200 dark:border-white/15 rounded-none lg:rounded-2xl relative overflow-hidden shadow-inner">
           <div ref={containerRef} className="absolute inset-0" />
+
+          {/* Pill mobile: nome do modelo, some sozinha */}
+          {info && (
+            <div
+              className={`lg:hidden absolute top-3 left-1/2 -translate-x-1/2 z-10 pointer-events-none transition-opacity duration-500 ${showPill ? "opacity-100" : "opacity-0"}`}
+            >
+              <div className="bg-black/60 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full max-w-[70vw] truncate">
+                {info.name}
+              </div>
+            </div>
+          )}
 
           {/* Overlay info */}
           <div className="absolute top-4 left-4 right-4 flex justify-between items-start z-10 pointer-events-none">
-            <div className="bg-white/80 dark:bg-black/60 backdrop-blur-md border border-zinc-200 dark:border-white/10 p-3 rounded-lg flex items-center gap-4 pointer-events-auto shadow-lg">
+            <div className="bg-white/80 dark:bg-black/60 backdrop-blur-md border border-zinc-200 dark:border-white/10 p-3 rounded-lg hidden lg:flex items-center gap-4 pointer-events-auto shadow-lg">
               <div>
                 <p className="text-[10px] text-zinc-500">VIEWER</p>
                 <p className="text-xs font-bold text-navy dark:text-white">
@@ -483,6 +523,10 @@ export default function BimViewer() {
           )}
         </div>
       </div>
+
+      <BimBottomSheet>
+        <PanelContent search={search} setSearch={setSearch} tree={tree} info={info} loading={loading} />
+      </BimBottomSheet>
     </div>
   );
 }
