@@ -6,6 +6,7 @@ import { Loader2, LogOut, LayoutDashboard, Briefcase, Users, Search, Bell, Setti
 import { useTheme } from "@/components/layout/ThemeProvider";
 import VerticeLogo from "@/components/layout/VerticeLogo";
 import FloatingChat from "@/components/chat/FloatingChat";
+import MobileTabBar from "@/components/layout/MobileTabBar";
 import { LightboxProvider } from "@/components/hq/thevertice/shared";
 import {
   DropdownMenu,
@@ -200,7 +201,7 @@ export default function HqLayout() {
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-navy-dark text-navy dark:text-white flex transition-colors duration-300 font-sans">
       
       {/* Sidebar - Reference Image Style */}
-      <aside className="w-20 lg:w-[260px] bg-white dark:bg-navy-light/60 flex flex-col h-screen sticky top-0 z-40 transition-all duration-300 border-r border-transparent dark:border-white/5 shadow-[2px_0_10px_rgba(0,0,0,0.02)]">
+      <aside className="hidden lg:flex lg:w-[260px] bg-white dark:bg-navy-light/60 flex-col h-screen sticky top-0 z-40 transition-all duration-300 border-r border-transparent dark:border-white/5 shadow-[2px_0_10px_rgba(0,0,0,0.02)]">
         
         {/* Logo */}
         <div className="h-24 flex items-center justify-center lg:justify-start lg:px-8">
@@ -254,14 +255,14 @@ export default function HqLayout() {
       <main className="flex-1 overflow-y-auto flex flex-col">
         
         {/* Top Header */}
-        <header className="h-24 px-8 flex items-center justify-between sticky top-0 bg-[#F8FAFC]/80 dark:bg-navy-dark/80 backdrop-blur-md z-30">
+        <header className="h-14 px-3 lg:h-24 lg:px-8 flex items-center justify-between sticky top-0 bg-[#F8FAFC]/80 dark:bg-navy-dark/80 backdrop-blur-md z-30">
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-full bg-zinc-200 dark:bg-white/10 flex items-center justify-center overflow-hidden">
+            <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-full bg-zinc-200 dark:bg-white/10 flex items-center justify-center overflow-hidden">
                <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.email}`} alt="Avatar" className="w-full h-full object-cover" />
             </div>
-            <div className="hidden sm:block">
+            <div>
               <h2 className="text-sm font-bold text-navy dark:text-white leading-tight">Olá, {displayName}</h2>
-              <p className="text-xs text-zinc-500">{new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+              <p className="hidden lg:block text-xs text-zinc-500">{new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
             </div>
           </div>
 
@@ -285,7 +286,7 @@ export default function HqLayout() {
             <div ref={bellRef} className="relative">
               <button
                 onClick={() => setShowBell((v) => !v)}
-                className="w-10 h-10 bg-white dark:bg-navy-light/40 border border-zinc-200 dark:border-white/10 rounded-full flex items-center justify-center text-zinc-500 hover:text-navy dark:hover:text-white transition-colors shadow-sm relative"
+                className="w-9 h-9 lg:w-10 lg:h-10 bg-white dark:bg-navy-light/40 border border-zinc-200 dark:border-white/10 rounded-full flex items-center justify-center text-zinc-500 hover:text-navy dark:hover:text-white transition-colors shadow-sm relative"
               >
                 <Bell size={18} />
                 {unreadCount > 0 && (
@@ -294,7 +295,7 @@ export default function HqLayout() {
               </button>
 
               {showBell && (
-                <div className="absolute right-0 top-12 w-80 bg-white dark:bg-navy-light border border-zinc-200 dark:border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden">
+                <div className="absolute right-0 top-12 w-80 max-w-[calc(100vw-1.5rem)] bg-white dark:bg-navy-light border border-zinc-200 dark:border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden">
                   <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100 dark:border-white/5">
                     <span className="font-bold text-sm text-navy dark:text-white">Notificações</span>
                     {unreadCount > 0 && (
@@ -330,7 +331,7 @@ export default function HqLayout() {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="w-10 h-10 bg-white dark:bg-navy-light/40 border border-zinc-200 dark:border-white/10 rounded-full flex items-center justify-center text-zinc-500 hover:text-navy dark:hover:text-white transition-colors shadow-sm">
+                <button className="w-9 h-9 lg:w-10 lg:h-10 bg-white dark:bg-navy-light/40 border border-zinc-200 dark:border-white/10 rounded-full flex items-center justify-center text-zinc-500 hover:text-navy dark:hover:text-white transition-colors shadow-sm">
                   <Settings size={18} />
                 </button>
               </DropdownMenuTrigger>
@@ -354,12 +355,22 @@ export default function HqLayout() {
         </header>
 
         {/* Page Content */}
-        <div className="p-6 lg:p-8 flex-1">
+        <div className="px-3 py-4 pb-24 lg:p-8 flex-1">
           <LightboxProvider>
             <Outlet />
           </LightboxProvider>
         </div>
       </main>
+
+      <MobileTabBar
+        tabs={[
+          { icon: <LayoutDashboard size={20} />, label: "Painel", to: "/hq", end: true },
+          { icon: <Rss size={20} />, label: "Mural", to: "/hq/feed" },
+          { icon: <CalendarDays size={20} />, label: "Agenda", to: "/hq/calendar" },
+          { icon: <BarChart3 size={20} />, label: "Enquetes", to: "/hq/polls" },
+          { icon: <Users size={20} />, label: "Membros", to: "/hq/members" },
+        ]}
+      />
 
       <FloatingChat />
     </div>
