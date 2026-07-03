@@ -363,7 +363,7 @@ function ProjectEvolution({
   }
 
   return (
-    <div className="grid grid-cols-12 gap-2 w-full h-full relative overflow-hidden">
+    <div className="grid grid-cols-12 gap-2 w-full h-full relative overflow-visible lg:overflow-hidden">
       {/* Subtle blueprint background */}
       <div
         className="absolute inset-0 pointer-events-none opacity-40 rounded-xl"
@@ -376,7 +376,7 @@ function ProjectEvolution({
       />
 
       {/* LEFT: phase selector */}
-      <div className="col-span-4 flex flex-col gap-1.5 relative z-10 overflow-y-auto pr-0.5 min-h-0">
+      <div className="col-span-12 lg:col-span-4 flex flex-col gap-1.5 relative z-10 overflow-y-auto pr-0.5 min-h-0">
         {milestones.map((m, i) => {
           const color = MILESTONE_COLORS[i % MILESTONE_COLORS.length];
           const p = Math.round(mPct(m));
@@ -465,12 +465,12 @@ function ProjectEvolution({
       </div>
 
       {/* CENTER: animated scene */}
-      <div className="col-span-5 relative z-10 flex items-center justify-center min-h-0">
+      <div className="col-span-12 lg:col-span-5 relative z-10 flex items-center justify-center min-h-0">
         <PhaseScene key={selectedId ?? "x"} kind={selectedKind} color={selectedColor} />
       </div>
 
       {/* RIGHT: stats for selected phase */}
-      <div className="col-span-3 relative z-10 flex flex-col justify-center min-h-0">
+      <div className="col-span-12 lg:col-span-3 relative z-10 flex flex-col justify-center min-h-0">
         {selected && (
           <motion.div
             key={selected.id}
@@ -706,7 +706,7 @@ INSTRUÇÕES:
             <div className="bg-accent/20 text-accent px-2.5 py-0.5 rounded font-bold text-[10px]">VRT-{project.id.slice(-4).toUpperCase()}</div>
             <span className="text-[10px] font-bold tracking-widest text-zinc-500 dark:text-zinc-400 font-mono">VISÃO GERAL • {project.type.toUpperCase()}</span>
           </div>
-          <h1 className="text-4xl font-black tracking-tighter text-navy dark:text-white font-sans leading-none">{project.name}</h1>
+          <h1 className="text-2xl lg:text-4xl font-black tracking-tighter text-navy dark:text-white font-sans leading-none">{project.name}</h1>
         </div>
         <p className="text-[10px] text-zinc-600 dark:text-zinc-300 hidden sm:block">
           {new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }).toUpperCase()}
@@ -714,7 +714,7 @@ INSTRUÇÕES:
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 shrink-0">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 lg:gap-3 shrink-0">
         <StatCard label="PROGRESSO DO PROJETO" value={`${calculatedProgress}%`} sub={`${approvedCount} DE ${milestones.length} APROVADAS`} icon={Activity} accent />
         <StatCard label="PRANCHAS ENTREGUES"   value={`${doneCount * 4}`}     sub={`DE ${milestones.length * 4} PREVISTAS`}         icon={FileCheck} />
         <StatCard label="STATUS ATUAL"          value={project.status === "Em Andamento" ? "ATIVO" : project.status.toUpperCase()} sub={project.type.toUpperCase()} icon={Layers} />
@@ -835,7 +835,7 @@ INSTRUÇÕES:
                         <div className="relative">
                           {isActive && <span className="absolute inset-0 rounded-full bg-accent/40 animate-ping" />}
                           {isDone && !isApproved && <span className="absolute inset-0 rounded-full bg-amber-400/40 animate-ping" />}
-                          <div className={`relative w-9 h-9 rounded-full flex items-center justify-center border-2 transition-all group-hover:scale-110 ${
+                          <div className={`relative w-8 h-8 lg:w-9 lg:h-9 rounded-full flex items-center justify-center border-2 transition-all group-hover:scale-110 ${
                             isApproved ? "bg-violet-600 border-violet-600 text-white shadow-lg shadow-violet-500/30" :
                             isDone     ? "bg-amber-400 border-amber-400 text-white" :
                             isActive   ? "bg-accent border-accent text-white shadow-lg shadow-accent/50" :
@@ -999,7 +999,7 @@ function StatCard({ label, value, sub, icon: Icon, accent, alert }: {
         <Icon className={`w-3.5 h-3.5 ${alert ? "text-accent" : "text-zinc-500 dark:text-zinc-400"}`} />
       </div>
       <div className="flex items-end justify-between">
-        <span className={`text-3xl font-black tracking-tighter font-sans ${accent || alert ? "text-accent" : "text-navy dark:text-white"}`}>
+        <span className={`text-xl lg:text-3xl font-black tracking-tighter font-sans ${accent || alert ? "text-accent" : "text-navy dark:text-white"}`}>
           {value}
         </span>
         <span className="text-[9px] text-zinc-600 dark:text-zinc-400 text-right leading-tight pb-1">{sub}</span>

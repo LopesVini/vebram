@@ -36,7 +36,7 @@ function TimelineCard({ upd }: { upd: Update }) {
     <div className="relative pl-8">
       <div className={`absolute -left-[11px] top-1 w-5 h-5 rounded-full border-4 border-zinc-50 dark:border-navy-dark ${dotColor}`} />
 
-      <div className="bg-white dark:bg-navy-light/60 border border-zinc-200 dark:border-white/10 rounded-2xl p-6 shadow-lg hover:border-zinc-300 dark:hover:border-white/20 transition-colors">
+      <div className="bg-white dark:bg-navy-light/60 border border-zinc-200 dark:border-white/10 rounded-xl p-3 lg:rounded-2xl lg:p-6 shadow-lg hover:border-zinc-300 dark:hover:border-white/20 transition-colors">
         <div className="mb-4">
           <div className="flex items-center gap-3 mb-1">
             <h2 className="text-xl font-black font-sans text-navy dark:text-white">{upd.title}</h2>
@@ -78,13 +78,13 @@ export default function ProjectUpdates() {
   const loading = loadingProject || loadingUpdates;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-6rem)] w-full font-mono text-zinc-300 relative gap-6 max-w-[1200px] mx-auto">
+    <div className="flex flex-col h-auto lg:h-[calc(100vh-6rem)] w-full font-mono text-zinc-300 relative gap-3 lg:gap-6 max-w-[1200px] mx-auto">
 
       {/* Header */}
       <div className="flex justify-between items-end border-b border-zinc-200 dark:border-white/5 pb-4 mb-2">
         <div className="flex items-center gap-4">
           <div className="bg-accent/20 text-accent px-3 py-1 rounded-[0.25rem] font-bold text-sm">[ LOG ]</div>
-          <h1 className="text-3xl font-black tracking-tighter text-navy dark:text-white uppercase font-sans">
+          <h1 className="text-xl lg:text-3xl font-black tracking-tighter text-navy dark:text-white uppercase font-sans">
             Registro de Entregas
           </h1>
         </div>
