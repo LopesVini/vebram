@@ -166,7 +166,7 @@ const GetStarted = () => {
                 <button 
                   type="button"
                   onClick={handleEnhance}
-                  disabled={isEnhancing || !message}
+                  disabled={isEnhancing || !message.trim()}
                   className="flex items-center gap-2 text-xs font-bold bg-accent/10 text-accent hover:bg-accent hover:text-accent-foreground px-3 py-1.5 rounded-full transition-colors disabled:opacity-50 disabled:hover:bg-accent/10 disabled:hover:text-accent"
                 >
                   <Sparkles size={14} className={isEnhancing ? "animate-spin" : ""} />

@@ -20,6 +20,7 @@ export default function PranchasTab({ projectId }: { projectId: string }) {
   const [file, setFile] = useState<File | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [removing, setRemoving] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState<string | null>(null);
 
   const groups = groupByDiscipline(pranchas);
   const fileError = file ? validatePranchaFile(file) : null;
@@ -52,7 +53,9 @@ export default function PranchasTab({ projectId }: { projectId: string }) {
   async function handleDownload(p: Prancha) {
     // Abre a aba de forma síncrona no clique para não ser bloqueada como popup.
     const tab = window.open("", "_blank");
+    setDownloading(p.id);
     const url = await getDownloadUrl(p);
+    setDownloading(null);
     if (!url) {
       tab?.close();
       toast.error("Não foi possível gerar o link de download.");
@@ -165,10 +168,11 @@ export default function PranchasTab({ projectId }: { projectId: string }) {
                 </span>
                 <button
                   onClick={() => handleDownload(p)}
-                  className="p-1.5 rounded-lg text-zinc-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors shrink-0"
+                  disabled={downloading === p.id}
+                  className="p-1.5 rounded-lg text-zinc-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors shrink-0 disabled:opacity-50"
                   title="Baixar"
                 >
-                  <Download size={14} />
+                  {downloading === p.id ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
                 </button>
                 {confirmDelete === p.id ? (
                   <div className="flex gap-1 shrink-0">
