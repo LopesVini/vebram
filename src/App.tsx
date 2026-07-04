@@ -32,6 +32,7 @@ const ProjectUpdates = lazy(() => import("./pages/portal/ProjectUpdates"));
 const HqLayout = lazy(() => import("./components/hq/HqLayout"));
 const HqDashboard = lazy(() => import("./pages/hq/HqDashboard"));
 const HqProjects = lazy(() => import("./pages/hq/HqProjects"));
+const HqProjectDetail = lazy(() => import("./pages/hq/HqProjectDetail"));
 const HqClients = lazy(() => import("./pages/hq/HqClients"));
 const HqFeed = lazy(() => import("./pages/hq/HqFeed"));
 const HqCalendar = lazy(() => import("./pages/hq/HqCalendar"));
@@ -121,6 +122,7 @@ const App = () => (
               <Route path="/hq" element={<HqLayout />}>
                 <Route index element={<HqDashboard />} />
                 <Route path="projects" element={<HqProjects />} />
+                <Route path="projects/:id" element={<HqProjectDetail />} />
                 <Route path="clients" element={<HqClients />} />
                 <Route path="feed" element={<HqFeed />} />
                 <Route path="calendar" element={<HqCalendar />} />

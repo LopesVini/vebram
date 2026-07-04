@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Search, MoreHorizontal, Clock, ChevronRight, X, Briefcase, Loader2, Trash2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { useProjects } from "@/hooks/data/useProjects";
 import type { Project } from "@/hooks/data/useProjects";
 import { supabase } from "@/lib/supabase";
-import HqProjectDrawer from "@/components/hq/HqProjectDrawer";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -329,6 +328,7 @@ function ConfirmDeleteModal({ name, onConfirm, onCancel }: { name: string; onCon
 
 export default function HqProjects() {
   const { projects, loading, saveProject, updateProject, deleteProject } = useProjects();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [search,    setSearch]    = useState("");
   const [filter,    setFilter]    = useState<Project["status"] | "Todos">("Todos");
@@ -340,7 +340,6 @@ export default function HqProjects() {
       setSearchParams({}, { replace: true });
     }
   }, [searchParams, setSearchParams]);
-  const [drawerProj, setDrawerProj] = useState<Project | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
 
   const filtered = projects.filter(p => {
@@ -423,7 +422,7 @@ export default function HqProjects() {
                 <div className="space-y-3">
                   <AnimatePresence>
                     {colProjects.map((proj, i) => (
-                      <ProjectCard key={proj.id} proj={proj} index={i} onProgressChange={handleProgressChange} onClick={() => setDrawerProj(proj)} onDelete={setDeleteTarget} />
+                      <ProjectCard key={proj.id} proj={proj} index={i} onProgressChange={handleProgressChange} onClick={() => navigate(`/hq/projects/${proj.id}`)} onDelete={setDeleteTarget} />
                     ))}
                   </AnimatePresence>
                   {colProjects.length === 0 && (
@@ -440,7 +439,7 @@ export default function HqProjects() {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-start">
           <AnimatePresence>
             {filtered.map((proj, i) => (
-              <ProjectCard key={proj.id} proj={proj} index={i} onProgressChange={handleProgressChange} onClick={() => setDrawerProj(proj)} onDelete={setDeleteTarget} />
+              <ProjectCard key={proj.id} proj={proj} index={i} onProgressChange={handleProgressChange} onClick={() => navigate(`/hq/projects/${proj.id}`)} onDelete={setDeleteTarget} />
             ))}
           </AnimatePresence>
           {filtered.length === 0 && (
@@ -466,8 +465,6 @@ export default function HqProjects() {
           />
         )}
       </AnimatePresence>
-
-      <HqProjectDrawer project={drawerProj} onClose={() => setDrawerProj(null)} />
 
       <style>{`
         :where(.modal-input) { width:100%;background:rgb(249 250 251);border:1px solid rgb(228 228 231);border-radius:.625rem;padding:.5rem .75rem;font-size:.813rem;color:rgb(15 23 42);outline:none;transition:border-color 150ms; }
