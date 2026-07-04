@@ -82,14 +82,14 @@ function ViewToggle({ active, onChange, baseId }: { active: ViewKey; onChange: (
             aria-controls={`${baseId}-panel-${v.key}`}
             tabIndex={isActive ? 0 : -1}
             onClick={() => onChange(v.key)}
-            className={`group relative flex-1 flex items-center gap-4 text-left rounded-[1.5rem] border-2 px-6 py-5 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+            className={`group relative flex-1 flex items-center gap-4 text-left rounded-[1.5rem] border-2 px-4 py-3.5 md:px-6 md:py-5 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
               isActive
                 ? "bg-navy-dark border-navy-dark shadow-xl shadow-navy/20 -translate-y-0.5"
                 : "bg-surface-elevated border-border hover:border-accent/60 hover:-translate-y-0.5 hover:shadow-lg"
             }`}
           >
             <span
-              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition-colors ${
+              className={`flex h-10 w-10 md:h-12 md:w-12 shrink-0 items-center justify-center rounded-2xl transition-colors ${
                 isActive ? "bg-accent text-accent-foreground" : "bg-accent/10 text-accent group-hover:bg-accent/15"
               }`}
             >
@@ -172,7 +172,7 @@ function TimelineView({ reduce }: { reduce: boolean | null }) {
               </span>
 
               <div className={`w-full md:w-1/2 pt-6 sm:pt-0 ${isEven ? "md:pr-16 text-left md:text-right" : "md:pl-16 text-left"}`}>
-                <div className="bg-surface border border-border p-8 rounded-[2rem] shadow-xl hover:border-accent/50 hover:shadow-2xl transition-all duration-300">
+                <div className="bg-surface border border-border p-5 md:p-8 rounded-[2rem] shadow-xl hover:border-accent/50 hover:shadow-2xl transition-all duration-300">
                   <div className={`flex items-center gap-4 mb-4 ${isEven ? "md:flex-row-reverse" : ""}`}>
                     <span className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center text-accent shrink-0">
                       <Icon size={24} />
@@ -500,7 +500,7 @@ function PortalView({ reduce }: { reduce: boolean | null }) {
         variants={container}
         initial="hidden"
         animate="show"
-        className="grid grid-cols-1 lg:grid-cols-6 gap-6"
+        className="grid grid-cols-1 lg:grid-cols-6 gap-4 md:gap-6"
       >
         {/* Row A — Dashboard hero + differentiator panel */}
         <motion.div variants={panel} className="lg:col-span-4 bg-surface border border-border rounded-[2rem] p-4 sm:p-5 shadow-2xl">
@@ -615,20 +615,20 @@ const Processo = () => {
     <div className="bg-background min-h-screen text-foreground antialiased selection:bg-accent/30 selection:text-accent-foreground overflow-hidden">
       <Navbar />
 
-      <main className="pt-40 pb-32 px-6 md:px-12 lg:px-24">
+      <main className="pt-28 pb-16 md:pt-40 md:pb-32 px-6 md:px-12 lg:px-24">
         {/* Hero */}
-        <div className="max-w-4xl mx-auto text-center mb-14">
+        <div className="max-w-4xl mx-auto text-center mb-8 md:mb-14">
           <span className="font-mono text-xs uppercase tracking-widest text-accent">Nossa Metodologia</span>
           <h1 className="font-sans font-extrabold text-4xl md:text-5xl lg:text-6xl mt-4 text-foreground leading-[1.05] tracking-tight text-balance">
             Um processo transparente.<br />Um portal que prova.
           </h1>
-          <p className="text-muted-foreground text-lg mt-6 max-w-2xl mx-auto text-pretty">
+          <p className="text-muted-foreground text-base md:text-lg mt-6 max-w-2xl mx-auto text-pretty">
             Conheça as 6 etapas que seu projeto percorre — e o portal exclusivo onde você acompanha cada uma delas em tempo real.
           </p>
         </div>
 
         {/* Toggle */}
-        <div className="mb-16">
+        <div className="mb-8 md:mb-16">
           <ViewToggle active={view} onChange={setView} baseId={baseId} />
         </div>
 

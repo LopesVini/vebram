@@ -18,13 +18,13 @@ const DifferentialsSection = () => {
   const isInView = useInView(ref, { once: true, margin: "-80px" });
 
   return (
-    <section className="section-padding bg-surface" ref={ref}>
+    <section className="px-6 py-10 md:py-20 md:px-12 lg:px-20 lg:py-28 bg-surface" ref={ref}>
       <div className="container-tight">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6 }}
-          className="text-center mb-16"
+          className="text-center mb-10 md:mb-16"
         >
           <span className="text-accent text-sm font-semibold tracking-widest uppercase">
             Diferenciais
@@ -34,14 +34,14 @@ const DifferentialsSection = () => {
           </h2>
         </motion.div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {differentials.map((item, i) => (
             <motion.div
               key={item.title}
               initial={{ opacity: 0, y: 30 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.5, delay: i * 0.08 }}
-              className="bg-surface-elevated p-6 rounded-xl border border-border hover:shadow-lg transition-shadow"
+              className="bg-surface-elevated p-4 md:p-6 rounded-xl border border-border hover:shadow-lg transition-shadow"
             >
               <item.icon className="text-accent mb-4" size={28} strokeWidth={1.5} />
               <h3 className="text-foreground font-bold text-lg">{item.title}</h3>
