@@ -2,18 +2,20 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Info, Flag, Bell, Box, Loader2 } from "lucide-react";
+import { ArrowLeft, Info, Flag, Bell, Box, Loader2, Layers } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { Project } from "@/hooks/data/useProjects";
 import OverviewTab from "@/components/hq/project-detail/OverviewTab";
 import MilestonesTab from "@/components/hq/project-detail/MilestonesTab";
 import UpdatesTab from "@/components/hq/project-detail/UpdatesTab";
+import PranchasTab from "@/components/hq/project-detail/PranchasTab";
 import BimTab from "@/components/hq/project-detail/BimTab";
 
 const TABS = [
   { id: "overview",   label: "Visão Geral",  icon: Info },
   { id: "milestones", label: "Marcos",       icon: Flag },
   { id: "updates",    label: "Atualizações", icon: Bell },
+  { id: "pranchas",   label: "Pranchas",     icon: Layers },
   { id: "bim",        label: "Modelo BIM",   icon: Box  },
 ] as const;
 
@@ -117,6 +119,7 @@ export default function HqProjectDetail() {
         )}
         {tab === "milestones" && <MilestonesTab projectId={project.id} />}
         {tab === "updates" && <UpdatesTab projectId={project.id} authorName="Admin" />}
+        {tab === "pranchas" && <PranchasTab projectId={project.id} />}
         {tab === "bim" && <BimTab project={project} />}
       </div>
     </div>
