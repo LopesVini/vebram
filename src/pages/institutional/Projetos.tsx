@@ -59,22 +59,22 @@ const Projetos = () => {
     <div className="bg-background min-h-screen text-foreground antialiased selection:bg-accent/30 selection:text-accent-foreground">
       <Navbar />
       
-      <main className="pt-40 pb-32 px-6 md:px-12 lg:px-24 min-h-[90vh]">
+      <main className="pt-28 pb-16 md:pt-40 md:pb-32 px-6 md:px-12 lg:px-24 min-h-[90vh]">
         <div className="max-w-7xl mx-auto" ref={containerRef}>
-          <div className="mb-16">
+          <div className="mb-10 md:mb-16">
             <span className="font-mono text-xs uppercase tracking-widest text-accent">Portfólio</span>
             <h1 className="font-sans font-extrabold text-4xl md:text-5xl lg:text-6xl mt-4 text-foreground leading-tight">
               Obras que assinam <br/>nossa precisão.
             </h1>
-            <p className="text-muted-foreground text-lg mt-6 max-w-2xl">
+            <p className="text-muted-foreground text-base md:text-lg mt-6 max-w-2xl">
               Confira alguns de nossos projetos modelo (Imagens de exemplo). Mais do que estética, entregamos engenharia que funciona na vida real.
             </p>
           </div>
           
-          <div className="grid md:grid-cols-2 gap-8 md:gap-12">
+          <div className="grid md:grid-cols-2 gap-6 md:gap-12">
             {projects.map((project) => (
               <div key={project.id} className="project-card group cursor-pointer">
-                <div className="relative overflow-hidden rounded-[2rem] aspect-[4/3] bg-surface mb-6 border border-border">
+                <div className="relative overflow-hidden rounded-[2rem] aspect-[4/3] bg-surface mb-4 md:mb-6 border border-border">
                   <img 
                     src={project.image} 
                     alt={project.title}
@@ -89,7 +89,7 @@ const Projetos = () => {
                 
                 <div className="px-2">
                   <span className="font-mono text-xs text-accent uppercase tracking-widest">{project.category}</span>
-                  <h3 className="font-sans font-bold text-2xl text-foreground mt-2 group-hover:text-accent transition-colors">
+                  <h3 className="font-sans font-bold text-xl md:text-2xl text-foreground mt-2 group-hover:text-accent transition-colors">
                     {project.title}
                   </h3>
                   <p className="text-muted-foreground mt-3 leading-relaxed">

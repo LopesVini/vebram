@@ -30,7 +30,7 @@ const ArqCard = () => {
   }, []);
 
   return (
-    <div className="bg-surface border border-border rounded-[2rem] p-8 shadow-2xl h-80 flex flex-col justify-between overflow-hidden" ref={container}>
+    <div className="bg-surface border border-border rounded-[2rem] p-5 md:p-8 shadow-2xl h-auto min-h-[16rem] md:h-80 flex flex-col justify-between overflow-hidden" ref={container}>
       <div>
         <h3 className="font-sans font-bold text-2xl text-foreground">Projeto Arquitetônico</h3>
         <p className="text-muted-foreground text-sm mt-2">Concepção espacial e funcional, aliando estética à viabilidade técnica.</p>
@@ -60,7 +60,7 @@ const EstCard = () => {
   }, []);
 
   return (
-    <div className="bg-surface border border-border rounded-[2rem] p-8 shadow-2xl h-80 flex flex-col justify-between" ref={container}>
+    <div className="bg-surface border border-border rounded-[2rem] p-5 md:p-8 shadow-2xl h-auto min-h-[16rem] md:h-80 flex flex-col justify-between" ref={container}>
       <div>
         <h3 className="font-sans font-bold text-2xl text-foreground">Projeto Estrutural</h3>
         <p className="text-muted-foreground text-sm mt-2">Dimensionamento seguro com profissional habilitado (CREA). Foco em economia e robustez.</p>
@@ -98,7 +98,7 @@ const EletricoCard = () => {
   }, []);
 
   return (
-    <div className="bg-surface border border-border rounded-[2rem] p-8 shadow-2xl h-80 flex flex-col justify-between" ref={container}>
+    <div className="bg-surface border border-border rounded-[2rem] p-5 md:p-8 shadow-2xl h-auto min-h-[16rem] md:h-80 flex flex-col justify-between" ref={container}>
       <div>
         <h3 className="font-sans font-bold text-2xl text-foreground">Projeto Elétrico</h3>
         <p className="text-muted-foreground text-sm mt-2">Distribuição inteligente de cargas, iluminação e automação residencial.</p>
@@ -132,7 +132,7 @@ const HidroCard = () => {
   }, []);
 
   return (
-    <div className="bg-surface border border-border rounded-[2rem] p-8 shadow-2xl h-80 flex flex-col justify-between" ref={container}>
+    <div className="bg-surface border border-border rounded-[2rem] p-5 md:p-8 shadow-2xl h-auto min-h-[16rem] md:h-80 flex flex-col justify-between" ref={container}>
       <div>
         <h3 className="font-sans font-bold text-2xl text-foreground">Projeto Hidrossanitário</h3>
         <p className="text-muted-foreground text-sm mt-2">Sistemas eficientes de abastecimento, esgoto e aproveitamento de água da chuva.</p>
@@ -174,19 +174,19 @@ const Servicos = () => {
     <div className="bg-background min-h-screen text-foreground antialiased selection:bg-accent/30 selection:text-accent-foreground">
       <Navbar />
       
-      <main className="pt-40 pb-32 px-6 md:px-12 lg:px-24">
+      <main className="pt-28 pb-16 md:pt-40 md:pb-32 px-6 md:px-12 lg:px-24">
         <div className="max-w-7xl mx-auto" ref={sectionRef}>
-          <div className="mb-16 max-w-2xl">
+          <div className="mb-10 md:mb-16 max-w-2xl">
             <span className="font-mono text-xs uppercase tracking-widest text-accent">Nossas Disciplinas</span>
             <h1 className="font-sans font-extrabold text-4xl md:text-5xl lg:text-6xl mt-4 text-foreground leading-tight">
               Especialidades Vertice.
             </h1>
-            <p className="text-muted-foreground text-lg mt-6">
+            <p className="text-muted-foreground text-base md:text-lg mt-6">
               Dominamos as 4 áreas fundamentais da engenharia residencial. A vantagem de fazer tudo no mesmo lugar é a ausência de retrabalho: o projeto arquitetônico já nasce compatibilizado com os projetos complementares.
             </p>
           </div>
           
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid md:grid-cols-2 gap-4 md:gap-8">
             <div className="feature-card"><ArqCard /></div>
             <div className="feature-card"><EstCard /></div>
             <div className="feature-card"><EletricoCard /></div>
