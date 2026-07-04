@@ -44,7 +44,7 @@ export function usePranchas(projectId: string | null | undefined) {
         .insert({
           project_id: projectId,
           discipline,
-          name: name.trim() || file.name,
+          name: name.trim() || file.name.replace(/\.[^.]+$/, ""),
           file_path: path,
           file_type: fileTypeFromName(file.name)!,
           size_bytes: file.size,
@@ -64,11 +64,13 @@ export function usePranchas(projectId: string | null | undefined) {
   }
 
   async function remove(prancha: Prancha): Promise<{ error: string | null }> {
-    const { error: stErr } = await supabase.storage.from(BUCKET).remove([prancha.file_path]);
-    if (stErr) return { error: stErr.message };
     const { error: dbErr } = await supabase.from("pranchas").delete().eq("id", prancha.id);
-    if (!dbErr) setPranchas(prev => prev.filter(p => p.id !== prancha.id));
-    return { error: dbErr?.message ?? null };
+    if (dbErr) return { error: dbErr.message };
+    setPranchas(prev => prev.filter(p => p.id !== prancha.id));
+    // Falha aqui deixa só um arquivo órfão invisível no bucket — preferível a
+    // manter na lista uma prancha cujo arquivo já foi removido.
+    const { error: stErr } = await supabase.storage.from(BUCKET).remove([prancha.file_path]);
+    return { error: stErr?.message ?? null };
   }
 
   async function getDownloadUrl(prancha: Prancha): Promise<string | null> {
