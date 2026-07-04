@@ -130,7 +130,7 @@ const GetStarted = () => {
         <div className="text-center mb-8 md:mb-12">
           <span className="font-mono text-xs uppercase tracking-widest text-accent">Contato</span>
           <h2 className="font-sans font-extrabold text-4xl md:text-5xl text-foreground mb-4 mt-4">Iniciar Projeto</h2>
-          <p className="text-muted-foreground text-base md:text-lg">Fale diretamente com a equipe Vertice. Sem intermediários, direto ao ponto.</p>
+          <p className="text-muted-foreground text-base md:text-lg">Fale diretamente com a equipe VEBRAM. Sem intermediários, direto ao ponto.</p>
         </div>
 
         {submitted ? (

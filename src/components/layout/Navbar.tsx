@@ -40,7 +40,7 @@ const Navbar = () => {
         )}
       >
         <button onClick={handleHomeClick} className="font-sans font-bold text-xl tracking-tight relative group text-foreground md:text-inherit bg-none border-none cursor-pointer">
-          VERTICE
+          VEBRAM
           <span className="absolute -bottom-1 left-0 w-0 h-[2px] bg-accent transition-all duration-300 group-hover:w-full"></span>
         </button>
 

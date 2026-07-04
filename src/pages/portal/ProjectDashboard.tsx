@@ -113,7 +113,7 @@ function LegalScene({ color }: { color: string }) {
         <circle cx="120" cy="160" r="34" fill="none" stroke={color} strokeWidth="3.5" />
         <circle cx="120" cy="160" r="27" fill="none" stroke={color} strokeWidth="1.5" />
         <text x="120" y="158" textAnchor="middle" fontSize="11" fontWeight="900" fill={color} style={{ letterSpacing: 1 }}>APROVADO</text>
-        <text x="120" y="170" textAnchor="middle" fontSize="6" fontWeight="700" fill={color}>VÉRTICE • 2026</text>
+        <text x="120" y="170" textAnchor="middle" fontSize="6" fontWeight="700" fill={color}>VEBRAM • 2026</text>
       </motion.g>
       <motion.circle
         cx="120" cy="160" fill="none" stroke={color} strokeWidth="2"
@@ -621,8 +621,8 @@ export default function ProjectDashboard() {
       `- ${new Date(u.created_at).toLocaleDateString("pt-BR")}: ${u.title}${u.content ? ` — ${u.content}` : ""}`
     ).join("\n");
 
-    return `Você é a Vertice AI, assistente virtual da Vértice Consultoria de Projetos.
-A Vértice é especializada em projetos de arquitetura, engenharia estrutural, elétrica e hidrossanitária.
+    return `Você é a VEBRAM AI, assistente virtual da VEBRAM Consultoria de Projetos.
+A VEBRAM é especializada em projetos de arquitetura, engenharia estrutural, elétrica e hidrossanitária.
 
 SOBRE O PROJETO ATUAL:
 - Projeto: ${project?.name ?? "Não identificado"}
@@ -653,7 +653,7 @@ INSTRUÇÕES:
 
   const { messages, isLoading, sendMessage, clearMessages } = useGroqChat(
     SYSTEM_PROMPT,
-    "Olá! Sou a Vertice AI. Posso esclarecer dúvidas sobre seu projeto, o portal ou engenharia em geral.",
+    "Olá! Sou a VEBRAM AI. Posso esclarecer dúvidas sobre seu projeto, o portal ou engenharia em geral.",
     project?.id
   );
 
@@ -691,7 +691,7 @@ INSTRUÇÕES:
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4 text-zinc-400">
         <Inbox size={48} className="opacity-30" />
-        <p className="text-sm font-mono text-center">Nenhum projeto vinculado à sua conta.<br />Aguarde o contato da equipe Vértice.</p>
+        <p className="text-sm font-mono text-center">Nenhum projeto vinculado à sua conta.<br />Aguarde o contato da equipe VEBRAM.</p>
       </div>
     );
   }
@@ -883,7 +883,7 @@ INSTRUÇÕES:
                 </div>
                 <div>
                   <p className="text-[11px] font-black text-navy dark:text-white tracking-tight flex items-center gap-1">
-                    VERTICE AI <Sparkles className="w-3 h-3 text-accent" />
+                    VEBRAM AI <Sparkles className="w-3 h-3 text-accent" />
                   </p>
                   <p className="text-[9px] text-zinc-500 dark:text-zinc-400">Online • Resposta instantânea</p>
                 </div>

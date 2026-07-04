@@ -7,7 +7,7 @@ const Footer = () => {
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-16 border-b border-white/10 pb-16">
           <div className="col-span-1">
-            <h2 className="font-sans font-bold text-3xl tracking-tight text-white mb-4">VERTICE</h2>
+            <h2 className="font-sans font-bold text-3xl tracking-tight text-white mb-4">VEBRAM</h2>
             <p className="text-white/50 text-sm font-sans leading-relaxed max-w-xs">
               Engenharia residencial completa e integrada. Projetos arquitetônicos, elétricos, hidrossanitários e estruturais para a Região Metropolitana de Belo Horizonte.
             </p>
@@ -48,7 +48,7 @@ const Footer = () => {
 
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-white/30 text-xs font-sans">
-            © {new Date().getFullYear()} Vertice Engenharia. Todos os direitos reservados.
+            © {new Date().getFullYear()} VEBRAM Engenharia. Todos os direitos reservados.
           </p>
           <div className="flex gap-4 text-white/30 text-xs font-sans">
             <a href="#" className="hover:text-white transition-colors">Política de Privacidade</a>

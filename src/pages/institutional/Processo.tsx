@@ -258,7 +258,7 @@ const DASH_MARCOS = [
 function DashboardMock({ reduce }: { reduce: boolean | null }) {
   return (
     <div className="rounded-[1.25rem] overflow-hidden bg-gradient-to-br from-navy-dark to-navy border border-white/10 shadow-inner">
-      <BrowserChrome label="portal.vertice.eng · Projeto Barraco" />
+      <BrowserChrome label="portal.vebram.eng · Projeto Barraco" />
       <div className="p-5 sm:p-6">
         <div className="flex items-center justify-between mb-5">
           <div>
@@ -417,7 +417,7 @@ function DeliveriesMock() {
                 <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${t.chip}`}>{t.label}</span>
               </div>
               <div className="flex items-center gap-2 mt-1">
-                <p className="text-[11px] text-muted-foreground font-mono">{d.when} · por Vértice</p>
+                <p className="text-[11px] text-muted-foreground font-mono">{d.when} · por VEBRAM</p>
                 {d.tone === "acao" && (
                   <span className="text-[10px] font-bold text-white bg-amber-500 rounded px-2 py-0.5">Aprovar entrega</span>
                 )}
@@ -439,7 +439,7 @@ function ChatMock() {
           <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-surface" />
         </span>
         <div className="leading-tight">
-          <p className="font-sans font-bold text-sm text-navy">Assistente Vértice</p>
+          <p className="font-sans font-bold text-sm text-navy">Assistente VEBRAM</p>
           <p className="text-[11px] text-green-600 font-mono">online · equipe técnica</p>
         </div>
       </div>
@@ -517,7 +517,7 @@ function PortalView({ reduce }: { reduce: boolean | null }) {
 
         <motion.div variants={panel} className="lg:col-span-2 bg-navy-dark text-white rounded-[2rem] p-5 md:p-8 shadow-2xl flex flex-col">
           <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-accent/15 text-accent border border-accent/25 px-3 py-1 text-xs font-mono">
-            <Sparkles size={13} /> O diferencial Vértice
+            <Sparkles size={13} /> O diferencial VEBRAM
           </span>
           <h3 className="font-sans font-bold text-2xl mt-4 leading-snug text-balance">
             Você nunca fica no escuro.

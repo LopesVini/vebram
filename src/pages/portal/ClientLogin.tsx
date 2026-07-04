@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/data/useAuth";
 import { fetchRole, isAdminRole } from "@/lib/roles";
@@ -56,7 +56,7 @@ export default function ClientLogin() {
         const admin = isAdminRole(role);
         toast({
           title: "Autenticado com sucesso",
-          description: admin ? "Bem-vindo ao VerticeHQ." : "Bem-vindo à Área do Cliente Vertice.",
+          description: admin ? "Bem-vindo ao VEBRAM QG." : "Bem-vindo à Área do Cliente VEBRAM.",
         });
         navigate(admin ? "/hq" : "/portal");
       }
@@ -78,10 +78,10 @@ export default function ClientLogin() {
       <div className="w-full lg:w-[45%] flex flex-col p-8 lg:p-16 relative">
         
         {/* Logo — painel esquerdo do login é sempre claro, então fixa em navy */}
-        <div className="flex items-center gap-3 mb-16">
+        <Link to="/" className="flex items-center gap-3 mb-16 hover:opacity-80 transition-opacity">
           <VerticeLogo monoNavy className="w-10 h-10 shrink-0" />
-          <span className="font-bold text-xl tracking-widest text-navy uppercase">Vertice</span>
-        </div>
+          <span className="font-bold text-xl tracking-widest text-navy uppercase">VEBRAM</span>
+        </Link>
 
         {/* Formulário Centralizado */}
         <div className="flex-1 flex flex-col justify-center max-w-sm w-full mx-auto">
@@ -239,7 +239,7 @@ export default function ClientLogin() {
               Controle em Tempo Real
             </h2>
             <p className="text-zinc-400 text-sm max-w-sm mx-auto leading-relaxed">
-              Bem-vindo à Área do Cliente Vertice. Acompanhe a evolução da sua obra com extrema precisão de dados e modelos BIM fedarados.
+              Bem-vindo à Área do Cliente VEBRAM. Acompanhe a evolução da sua obra com extrema precisão de dados e modelos BIM fedarados.
             </p>
           </div>
 

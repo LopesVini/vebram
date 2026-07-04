@@ -33,10 +33,10 @@ const COMMANDS: Cmd[] = [
   { id: "dashboard",   label: "Dashboard",      desc: "Área principal do sistema",       icon: LayoutDashboard, path: "/hq",              category: "Navegar",  keywords: ["home","início","inicio","painel","principal","dashboard"] },
   { id: "projects",    label: "Ver Projetos",    desc: "Lista de todos os projetos",      icon: Briefcase,       path: "/hq/projects",     category: "Navegar",  keywords: ["projetos","obras","ver projetos","listar"] },
   { id: "clients",     label: "Ver Clientes",    desc: "Lista de todos os clientes",      icon: Users,           path: "/hq/clients",      category: "Navegar",  keywords: ["clientes","contatos","empresa","ver clientes"] },
-  { id: "feed",        label: "Mural",           desc: "Feed interno da equipe",          icon: Rss,             path: "/hq/feed",         category: "The Vertice", keywords: ["mural","feed","publicações","publicacoes","posts","the vertice"] },
-  { id: "calendar",    label: "Calendário",      desc: "Disponibilidade da equipe",       icon: CalendarDays,    path: "/hq/calendar",     category: "The Vertice", keywords: ["calendário","calendario","agenda","disponibilidade","férias","ferias"] },
-  { id: "polls",       label: "Enquetes",        desc: "Decisões e votações da equipe",    icon: BarChart3,       path: "/hq/polls",        category: "The Vertice", keywords: ["enquetes","votação","votacao","poll","decisões","decisoes"] },
-  { id: "members",     label: "Membros",         desc: "Sócios e equipe da rede",         icon: Users,           path: "/hq/members",      category: "The Vertice", keywords: ["membros","equipe","sócios","socios","time","members"] },
+  { id: "feed",        label: "Mural",           desc: "Feed interno da equipe",          icon: Rss,             path: "/hq/feed",         category: "VEBRAM", keywords: ["mural","feed","publicações","publicacoes","posts","vebram"] },
+  { id: "calendar",    label: "Calendário",      desc: "Disponibilidade da equipe",       icon: CalendarDays,    path: "/hq/calendar",     category: "VEBRAM", keywords: ["calendário","calendario","agenda","disponibilidade","férias","ferias","vebram"] },
+  { id: "polls",       label: "Enquetes",        desc: "Decisões e votações da equipe",    icon: BarChart3,       path: "/hq/polls",        category: "VEBRAM", keywords: ["enquetes","votação","votacao","poll","decisões","decisoes","vebram"] },
+  { id: "members",     label: "Membros",         desc: "Sócios e equipe da rede",         icon: Users,           path: "/hq/members",      category: "VEBRAM", keywords: ["membros","equipe","sócios","socios","time","members","vebram"] },
   { id: "profile",     label: "Meu Perfil",      desc: "Configurações da sua conta",      icon: UserCircle,      path: "/hq/profile",      category: "Navegar",  keywords: ["perfil","conta","configurações","settings","profile"] },
   { id: "new-project", label: "Criar Projeto",   desc: "Abrir formulário de novo projeto",icon: Plus,            path: "/hq/projects?new=1", category: "Ações",  keywords: ["criar projeto","novo projeto","adicionar projeto","new project","add project"] },
   { id: "new-client",  label: "Criar Cliente",   desc: "Cadastrar um novo cliente",       icon: UserPlus,        path: "/hq/clients?new=1",  category: "Ações",  keywords: ["criar cliente","novo cliente","adicionar cliente","cadastrar cliente","new client"] },
@@ -207,7 +207,7 @@ export default function HqLayout() {
         <div className="h-24 flex items-center justify-center lg:justify-start lg:px-8">
           <VerticeLogo className="w-9 h-9 shrink-0" />
           <span className="hidden lg:block ml-3 font-bold text-xl tracking-tight text-navy dark:text-white">
-            VérticeQG
+            VEBRAM QG
           </span>
         </div>
 
@@ -218,7 +218,7 @@ export default function HqLayout() {
           <NavItem icon={<Briefcase size={20} />} label="Projetos" to="/hq/projects" />
           <NavItem icon={<Users size={20} />} label="Clientes" to="/hq/clients" />
 
-          <p className="hidden lg:block text-xs font-bold text-zinc-400 mb-2 mt-4 px-4">THE VERTICE</p>
+          <p className="hidden lg:block text-xs font-bold text-zinc-400 mb-2 mt-4 px-4">VEBRAM</p>
           <NavItem icon={<Rss size={20} />} label="Mural" to="/hq/feed" />
           <NavItem icon={<CalendarDays size={20} />} label="Calendário" to="/hq/calendar" />
           <NavItem icon={<BarChart3 size={20} />} label="Enquetes" to="/hq/polls" />

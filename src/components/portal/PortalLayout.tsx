@@ -42,7 +42,7 @@ export default function PortalLayout() {
         <div className="h-20 flex items-center justify-center lg:justify-start lg:px-8 border-b border-zinc-200 dark:border-white/5">
           <VerticeLogo className="w-9 h-9 shrink-0" />
           <span className="hidden lg:block ml-3 font-sans font-bold tracking-widest uppercase text-navy dark:text-white">
-            Vertice
+            VEBRAM
           </span>
         </div>
 
@@ -90,7 +90,7 @@ export default function PortalLayout() {
                       {displayName.toUpperCase()}
                     </p>
                     <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mt-0.5">
-                      @VERTICE_CORP
+                      @VEBRAM_CORP
                     </p>
                   </div>
                 </div>
@@ -121,7 +121,7 @@ export default function PortalLayout() {
         <div className="flex items-center gap-2">
           <VerticeLogo className="w-7 h-7" />
           <span className="font-sans font-bold tracking-widest uppercase text-sm text-navy dark:text-white">
-            Vertice
+            VEBRAM
           </span>
         </div>
         <button

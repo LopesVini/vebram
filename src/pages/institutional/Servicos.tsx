@@ -179,7 +179,7 @@ const Servicos = () => {
           <div className="mb-10 md:mb-16 max-w-2xl">
             <span className="font-mono text-xs uppercase tracking-widest text-accent">Nossas Disciplinas</span>
             <h1 className="font-sans font-extrabold text-4xl md:text-5xl lg:text-6xl mt-4 text-foreground leading-tight">
-              Especialidades Vertice.
+              Especialidades VEBRAM.
             </h1>
             <p className="text-muted-foreground text-base md:text-lg mt-6">
               Dominamos as 4 áreas fundamentais da engenharia residencial. A vantagem de fazer tudo no mesmo lugar é a ausência de retrabalho: o projeto arquitetônico já nasce compatibilizado com os projetos complementares.
