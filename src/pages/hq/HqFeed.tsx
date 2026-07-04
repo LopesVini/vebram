@@ -375,7 +375,7 @@ function StatButton({
   return (
     <button
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 text-xs lg:text-[13px] font-semibold p-2 lg:px-2.5 lg:py-1.5 rounded-full transition-colors hover:bg-zinc-100 dark:hover:bg-white/5 ${
+      className={`inline-flex items-center gap-1.5 text-xs lg:text-[13px] font-semibold p-2 lg:px-2.5 lg:py-1.5 rounded-full transition-colors hover:bg-zinc-100 dark:hover:bg-white/5 min-h-10 min-w-10 lg:min-h-0 lg:min-w-0 ${
         active ? activeClass : "text-zinc-500 hover:text-navy dark:hover:text-white"
       }`}
     >
@@ -475,7 +475,7 @@ function NewPostModal({
               profiles={tv.profiles}
               rows={5}
               placeholder="Descreva a atualização, decisão, prazo… Digite @ para mencionar colegas."
-              className="min-h-0 h-10 focus:h-auto lg:h-auto"
+              className={`min-h-0 ${content.trim() ? "" : "h-10 focus:h-auto"} lg:h-auto`}
             />
           </div>
           <div>
