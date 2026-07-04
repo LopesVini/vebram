@@ -1,6 +1,6 @@
 import { Navigate, Outlet, NavLink, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/data/useAuth";
-import { Loader2, LogOut, LayoutDashboard, Box, History, MoreVertical, User, UserCircle, Sun, Moon } from "lucide-react";
+import { Loader2, LogOut, LayoutDashboard, Box, History, Layers, MoreVertical, User, UserCircle, Sun, Moon } from "lucide-react";
 import { useTheme } from "@/components/layout/ThemeProvider";
 import VerticeLogo from "@/components/layout/VerticeLogo";
 import FloatingChat from "@/components/chat/FloatingChat";
@@ -50,6 +50,7 @@ export default function PortalLayout() {
           <NavItem icon={<LayoutDashboard />} label="Dashboard" to="/portal" end />
           <NavItem icon={<Box />} label="Modelo BIM" to="/portal/bim" />
           <NavItem icon={<History />} label="Atualizações" to="/portal/updates" />
+          <NavItem icon={<Layers />} label="Pranchas" to="/portal/pranchas" />
         </nav>
 
         <div className="mt-auto flex flex-col">
@@ -145,6 +146,7 @@ export default function PortalLayout() {
           { icon: <LayoutDashboard size={20} />, label: "Início", to: "/portal", end: true },
           { icon: <Box size={20} />, label: "BIM", to: "/portal/bim" },
           { icon: <History size={20} />, label: "Novidades", to: "/portal/updates" },
+          { icon: <Layers size={20} />, label: "Pranchas", to: "/portal/pranchas" },
           { icon: <UserCircle size={20} />, label: "Perfil", to: "/portal/profile" },
         ]}
       />

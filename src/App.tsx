@@ -29,6 +29,7 @@ const PortalLayout = lazy(() => import("./components/portal/PortalLayout"));
 const ProjectDashboard = lazy(() => import("./pages/portal/ProjectDashboard"));
 const BimViewer = lazy(() => import("./pages/portal/BimViewer"));
 const ProjectUpdates = lazy(() => import("./pages/portal/ProjectUpdates"));
+const Pranchas = lazy(() => import("./pages/portal/Pranchas"));
 const HqLayout = lazy(() => import("./components/hq/HqLayout"));
 const HqDashboard = lazy(() => import("./pages/hq/HqDashboard"));
 const HqProjects = lazy(() => import("./pages/hq/HqProjects"));
@@ -115,6 +116,7 @@ const App = () => (
                 <Route index element={<ProjectDashboard />} />
                 <Route path="bim" element={<BimViewer />} />
                 <Route path="updates" element={<ProjectUpdates />} />
+                <Route path="pranchas" element={<Pranchas />} />
                 <Route path="profile" element={<Profile />} />
               </Route>
 
