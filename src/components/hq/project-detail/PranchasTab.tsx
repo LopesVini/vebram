@@ -50,9 +50,16 @@ export default function PranchasTab({ projectId }: { projectId: string }) {
   }
 
   async function handleDownload(p: Prancha) {
+    // Abre a aba de forma síncrona no clique para não ser bloqueada como popup.
+    const tab = window.open("", "_blank");
     const url = await getDownloadUrl(p);
-    if (!url) { toast.error("Não foi possível gerar o link de download."); return; }
-    window.open(url, "_blank");
+    if (!url) {
+      tab?.close();
+      toast.error("Não foi possível gerar o link de download.");
+      return;
+    }
+    if (tab) tab.location.href = url;
+    else window.location.href = url;
   }
 
   return (

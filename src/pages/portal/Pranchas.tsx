@@ -21,11 +21,19 @@ export default function Pranchas() {
   const groups = groupByDiscipline(pranchas);
 
   async function handleDownload(p: Prancha) {
+    // Abre a aba de forma síncrona no clique para não ser bloqueada como popup;
+    // a URL assinada é preenchida quando resolve.
+    const tab = window.open("", "_blank");
     setDownloading(p.id);
     const url = await getDownloadUrl(p);
     setDownloading(null);
-    if (!url) { toast.error("Não foi possível gerar o link de download. Tente novamente."); return; }
-    window.open(url, "_blank");
+    if (!url) {
+      tab?.close();
+      toast.error("Não foi possível gerar o link de download. Tente novamente.");
+      return;
+    }
+    if (tab) tab.location.href = url;
+    else window.location.href = url; // popup bloqueado: navega na própria aba
   }
 
   return (
