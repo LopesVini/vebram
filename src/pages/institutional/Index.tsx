@@ -17,23 +17,25 @@ const Index = () => {
         <HeroSection />
         
         {/* Expanded Navigation Section on Home */}
-        <section className="py-32 px-6 md:px-12 lg:px-24 bg-background border-t border-border/50">
+        <section className="py-16 md:py-32 px-6 md:px-12 lg:px-24 bg-background border-t border-border/50">
           <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-20">
+            <div className="text-center mb-10 md:mb-20">
               <span className="font-mono text-xs uppercase tracking-widest text-accent">Nossa Atuação</span>
               <h2 className="font-sans font-extrabold text-4xl md:text-5xl mt-4 text-foreground">
                 Tudo que sua obra precisa.
               </h2>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8">
-              <Link to="/servicos" className="group relative bg-surface border border-border p-10 rounded-[2rem] hover:border-accent hover:shadow-2xl transition-all duration-500 overflow-hidden flex flex-col justify-between min-h-[300px]">
+            <div className="grid md:grid-cols-3 gap-4 md:gap-8">
+              <Link to="/servicos" className="group relative bg-surface border border-border p-6 md:p-10 rounded-[2rem] hover:border-accent hover:shadow-2xl transition-all duration-500 overflow-hidden flex flex-col justify-between min-h-0 md:min-h-[300px]">
                 <div className="absolute -right-8 -top-8 text-foreground/5 group-hover:text-accent/10 transition-colors duration-500">
-                  <Layers size={150} />
+                  <div className="scale-[0.66] md:scale-100 origin-top-right">
+                    <Layers size={150} />
+                  </div>
                 </div>
                 <div className="relative z-10">
-                  <h3 className="font-sans font-bold text-3xl mb-4 text-foreground group-hover:text-accent transition-colors">As 4 Disciplinas</h3>
-                  <p className="text-muted-foreground text-lg mb-8 leading-relaxed">
+                  <h3 className="font-sans font-bold text-2xl md:text-3xl mb-4 text-foreground group-hover:text-accent transition-colors">As 4 Disciplinas</h3>
+                  <p className="text-muted-foreground text-base md:text-lg mb-6 md:mb-8 leading-relaxed">
                     Arquitetônico, Estrutural, Elétrico e Hidrossanitário desenvolvidos simultaneamente no mesmo escritório.
                   </p>
                 </div>
@@ -42,13 +44,15 @@ const Index = () => {
                 </div>
               </Link>
 
-              <Link to="/processo" className="group relative bg-navy-dark border border-border p-10 rounded-[2rem] hover:border-accent hover:shadow-2xl transition-all duration-500 overflow-hidden flex flex-col justify-between min-h-[300px] text-white">
+              <Link to="/processo" className="group relative bg-navy-dark border border-border p-6 md:p-10 rounded-[2rem] hover:border-accent hover:shadow-2xl transition-all duration-500 overflow-hidden flex flex-col justify-between min-h-0 md:min-h-[300px] text-white">
                 <div className="absolute -right-8 -top-8 text-white/5 group-hover:text-accent/10 transition-colors duration-500">
-                  <Ruler size={150} />
+                  <div className="scale-[0.66] md:scale-100 origin-top-right">
+                    <Ruler size={150} />
+                  </div>
                 </div>
                 <div className="relative z-10">
-                  <h3 className="font-sans font-bold text-3xl mb-4 text-white group-hover:text-accent transition-colors">Linha do Tempo</h3>
-                  <p className="text-white/60 text-lg mb-8 leading-relaxed">
+                  <h3 className="font-sans font-bold text-2xl md:text-3xl mb-4 text-white group-hover:text-accent transition-colors">Linha do Tempo</h3>
+                  <p className="text-white/60 text-base md:text-lg mb-6 md:mb-8 leading-relaxed">
                     Acompanhe nosso processo desde o orçamento até a liberação do alvará na prefeitura e entrega executiva.
                   </p>
                 </div>
@@ -57,13 +61,15 @@ const Index = () => {
                 </div>
               </Link>
 
-              <Link to="/projetos" className="group relative bg-surface border border-border p-10 rounded-[2rem] hover:border-accent hover:shadow-2xl transition-all duration-500 overflow-hidden flex flex-col justify-between min-h-[300px]">
+              <Link to="/projetos" className="group relative bg-surface border border-border p-6 md:p-10 rounded-[2rem] hover:border-accent hover:shadow-2xl transition-all duration-500 overflow-hidden flex flex-col justify-between min-h-0 md:min-h-[300px]">
                 <div className="absolute -right-8 -top-8 text-foreground/5 group-hover:text-accent/10 transition-colors duration-500">
-                  <Blocks size={150} />
+                  <div className="scale-[0.66] md:scale-100 origin-top-right">
+                    <Blocks size={150} />
+                  </div>
                 </div>
                 <div className="relative z-10">
-                  <h3 className="font-sans font-bold text-3xl mb-4 text-foreground group-hover:text-accent transition-colors">Nosso Portfólio</h3>
-                  <p className="text-muted-foreground text-lg mb-8 leading-relaxed">
+                  <h3 className="font-sans font-bold text-2xl md:text-3xl mb-4 text-foreground group-hover:text-accent transition-colors">Nosso Portfólio</h3>
+                  <p className="text-muted-foreground text-base md:text-lg mb-6 md:mb-8 leading-relaxed">
                     Modelos 3D, cálculos estruturais e compatibilização real aplicados em residências de alto padrão na RMBH.
                   </p>
                 </div>

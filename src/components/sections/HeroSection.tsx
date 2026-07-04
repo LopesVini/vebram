@@ -24,7 +24,7 @@ const HeroSection = () => {
   return (
     <section 
       ref={container}
-      className="relative min-h-screen w-full overflow-hidden flex items-end pt-28 pb-24 md:pb-32 px-6 md:px-12 lg:px-24"
+      className="relative min-h-screen w-full overflow-hidden flex items-end pt-24 pb-16 md:pt-28 md:pb-32 px-6 md:px-12 lg:px-24"
     >
       {/* Background Image & Gradient */}
       <div className="absolute inset-0 z-0">
@@ -33,7 +33,7 @@ const HeroSection = () => {
           alt="Arquitetura de precisão" 
           className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/80 to-transparent"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/85 to-transparent"></div>
         <div className="absolute inset-0 bg-black/40"></div>
       </div>
 
@@ -43,31 +43,31 @@ const HeroSection = () => {
           <h1 className="hero-elem font-sans font-extrabold text-4xl md:text-5xl lg:text-6xl tracking-tight text-white uppercase leading-none">
             Engenharia residencial com
           </h1>
-          <h2 className="hero-elem font-drama italic text-7xl md:text-8xl lg:text-[10rem] text-accent leading-[0.8] mt-2 md:-mt-2">
+          <h2 className="hero-elem font-drama italic text-6xl md:text-8xl lg:text-[10rem] text-accent leading-[0.8] mt-2 md:-mt-2">
             Precisão.
           </h2>
         </div>
 
-        <p className="hero-elem mt-8 max-w-xl text-lg md:text-xl text-white/80 font-sans font-light leading-relaxed">
+        <p className="hero-elem mt-6 md:mt-8 max-w-xl text-base md:text-xl text-white/80 font-sans font-light leading-relaxed">
           Projetos arquitetônicos, elétricos, hidrossanitários e estruturais — integrados desde a concepção, compatibilizados entre si e alinhados às normas do seu município na RMBH.
         </p>
 
-        <div className="hero-elem mt-4 flex items-center gap-3">
+        <div className="hero-elem mt-4 flex flex-wrap items-center gap-2 md:gap-3">
           <span className="font-mono text-xs text-white/40 uppercase tracking-widest border border-white/10 px-3 py-1 rounded-full">
             Especialistas
           </span>
           <span className="font-mono text-xs text-white/40 uppercase tracking-widest border border-white/10 px-3 py-1 rounded-full">
             Multidisciplinar
           </span>
-          <span className="font-mono text-xs text-white/40 uppercase tracking-widest border border-white/10 px-3 py-1 rounded-full hidden sm:block">
+          <span className="font-mono text-xs text-white/40 uppercase tracking-widest border border-white/10 px-3 py-1 rounded-full">
             RMBH
           </span>
         </div>
 
-        <div className="hero-elem mt-10">
+        <div className="hero-elem mt-8 md:mt-10">
           <Link
             to="/orcamento"
-            className="inline-flex relative overflow-hidden bg-accent text-accent-foreground px-10 py-5 rounded-full text-lg font-bold shadow-2xl shadow-accent/20 hover:scale-[1.03] transition-transform duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group"
+            className="inline-flex relative overflow-hidden bg-accent text-accent-foreground px-7 py-3.5 text-base md:px-10 md:py-5 md:text-lg rounded-full font-bold shadow-2xl shadow-accent/20 hover:scale-[1.03] transition-transform duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group"
           >
             <span className="relative z-10">Solicitar Orçamento</span>
             <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] rounded-full"></div>
