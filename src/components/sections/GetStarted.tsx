@@ -123,14 +123,14 @@ const GetStarted = () => {
   };
 
   return (
-    <section className="py-32 px-6 md:px-12 lg:px-24 bg-surface relative overflow-hidden">
+    <section className="py-16 md:py-32 px-6 md:px-12 lg:px-24 bg-surface relative overflow-hidden">
       <div className="absolute inset-0 z-0" style={{ backgroundImage: "radial-gradient(hsl(var(--muted-foreground)/0.2) 1px, transparent 1px)", backgroundSize: "40px 40px" }}></div>
       
-      <div className="relative z-10 max-w-4xl mx-auto bg-background border border-border rounded-[3rem] shadow-2xl p-8 md:p-16">
-        <div className="text-center mb-12">
+      <div className="relative z-10 max-w-4xl mx-auto bg-background border border-border rounded-[2rem] md:rounded-[3rem] shadow-2xl p-5 md:p-16">
+        <div className="text-center mb-8 md:mb-12">
           <span className="font-mono text-xs uppercase tracking-widest text-accent">Contato</span>
           <h2 className="font-sans font-extrabold text-4xl md:text-5xl text-foreground mb-4 mt-4">Iniciar Projeto</h2>
-          <p className="text-muted-foreground text-lg">Fale diretamente com a equipe Vertice. Sem intermediários, direto ao ponto.</p>
+          <p className="text-muted-foreground text-base md:text-lg">Fale diretamente com a equipe Vertice. Sem intermediários, direto ao ponto.</p>
         </div>
 
         {submitted ? (
@@ -142,23 +142,23 @@ const GetStarted = () => {
             </p>
           </div>
         ) : (
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            <div className="grid md:grid-cols-2 gap-6">
+          <form className="space-y-4 md:space-y-6" onSubmit={handleSubmit}>
+            <div className="grid md:grid-cols-2 gap-4 md:gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-bold text-foreground">Nome completo</label>
-                <input name="nome" type="text" className="w-full bg-surface border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-accent transition-all" placeholder="Seu nome" />
+                <input name="nome" type="text" className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-accent transition-all" placeholder="Seu nome" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold text-foreground">E-mail</label>
-                <input name="email" type="email" className="w-full bg-surface border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-accent transition-all" placeholder="seu@email.com" />
+                <input name="email" type="email" className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-accent transition-all" placeholder="seu@email.com" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold text-foreground">Telefone / WhatsApp</label>
-                <input name="celular" type="tel" className="w-full bg-surface border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-accent transition-all" placeholder="(31) 90000-0000" />
+                <input name="celular" type="tel" className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-accent transition-all" placeholder="(31) 90000-0000" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold text-foreground">Município</label>
-                <select name="cidade" className="w-full bg-surface border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-accent transition-all text-foreground">
+                <select name="cidade" className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-accent transition-all text-foreground">
                   <option value="">Selecione o município</option>
                   <option value="Belo Horizonte">Belo Horizonte</option>
                   <option value="Nova Lima">Nova Lima</option>
@@ -184,7 +184,7 @@ const GetStarted = () => {
                       key={type.id}
                       type="button"
                       onClick={() => toggleProjectType(type.id)}
-                      className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all border ${
+                      className={`px-4 py-2.5 text-sm md:px-5 rounded-xl font-bold transition-all border ${
                         isSelected 
                           ? 'bg-accent text-accent-foreground border-accent shadow-[0_0_15px_rgba(var(--accent),0.3)] scale-105' 
                           : 'bg-surface text-muted-foreground border-border hover:border-accent hover:text-foreground'
@@ -213,13 +213,13 @@ const GetStarted = () => {
                 </button>
               </div>
               
-              <textarea 
+              <textarea
                 name="mensagem"
                 rows={5}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                className="w-full bg-surface border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-accent transition-all resize-none" 
-                placeholder="Descreva as características da residência, tamanho do terreno, número de pavimentos, necessidades especiais..." 
+                className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-accent transition-all resize-none"
+                placeholder="Descreva as características da residência, tamanho do terreno, número de pavimentos, necessidades especiais..."
               />
             </div>
 
