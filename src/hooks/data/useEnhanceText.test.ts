@@ -45,4 +45,26 @@ describe("useEnhanceText", () => {
     await act(async () => { await result.current.enhance("   "); });
     expect(fetch).not.toHaveBeenCalled();
   });
+
+  it("retorna null e avisa quando a chave da API não está configurada", async () => {
+    vi.stubEnv("VITE_GROQ_API_KEY", "");
+    const { result } = renderHook(() => useEnhanceText("p"));
+    let out: string | null = "x";
+    await act(async () => { out = await result.current.enhance("abc"); });
+    expect(out).toBeNull();
+    expect(fetch).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalled();
+  });
+
+  it("retorna null e mostra toast quando a IA devolve conteúdo vazio", async () => {
+    (fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: "   " } }] }),
+    });
+    const { result } = renderHook(() => useEnhanceText("p"));
+    let out: string | null = "x";
+    await act(async () => { out = await result.current.enhance("abc"); });
+    expect(out).toBeNull();
+    expect(toast.error).toHaveBeenCalled();
+  });
 });
