@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Sparkles, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { useEnhanceText } from "@/hooks/data/useEnhanceText";
+import { ENHANCE_QUOTE_PROMPT } from "@/lib/enhancePrompts";
 
 const GetStarted = () => {
   const [message, setMessage] = useState("");
-  const [isEnhancing, setIsEnhancing] = useState(false);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -17,51 +18,11 @@ const GetStarted = () => {
     );
   };
 
+  const { enhance, isEnhancing } = useEnhanceText(ENHANCE_QUOTE_PROMPT);
+
   const handleEnhance = async () => {
-    if (!message) return;
-    setIsEnhancing(true);
-    
-    try {
-      const apiKey = import.meta.env.VITE_GROQ_API_KEY;
-      if (!apiKey) {
-        throw new Error("Chave da API do Groq não encontrada no .env");
-      }
-
-      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
-          messages: [
-            {
-              role: "system",
-              content: "Você é um assistente técnico de engenharia civil. O usuário vai lhe passar uma descrição de um projeto residencial que ele deseja orçar. Você deve reescrever essa descrição de forma clara, técnica, muito profissional e objetiva, mantendo todas as informações cruciais. Apenas devolva o texto refinado, nada mais. Mantenha em primeira pessoa (se o usuário usou)."
-            },
-            {
-              role: "user",
-              content: message
-            }
-          ],
-          temperature: 0.5,
-          max_tokens: 500
-        })
-      });
-
-      if (!response.ok) throw new Error("Erro na API do Groq");
-      
-      const data = await response.json();
-      if (data.choices && data.choices[0]?.message?.content) {
-        setMessage(data.choices[0].message.content.trim());
-      }
-    } catch (error) {
-      console.error("Erro ao melhorar texto com IA:", error);
-      alert("Houve um problema de conexão com a IA (Groq). Verifique o console.");
-    } finally {
-      setIsEnhancing(false);
-    }
+    const improved = await enhance(message);
+    if (improved) setMessage(improved);
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
