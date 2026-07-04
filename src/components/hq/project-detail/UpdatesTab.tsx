@@ -1,9 +1,11 @@
 // src/components/hq/project-detail/UpdatesTab.tsx
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bell, Plus, Trash2, Loader2, Send } from "lucide-react";
+import { Bell, Plus, Trash2, Loader2, Send, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useUpdates } from "@/hooks/data/useUpdates";
+import { useEnhanceText } from "@/hooks/data/useEnhanceText";
+import { ENHANCE_UPDATE_PROMPT } from "@/lib/enhancePrompts";
 import UpdateComments from "@/components/updates/UpdateComments";
 
 function fmtDate(iso: string) {
@@ -23,6 +25,12 @@ export default function UpdatesTab({ projectId, authorName }: { projectId: strin
   const [deleting, setDeleting] = useState<string | null>(null);
   const [form, setForm] = useState({ title: "", content: "", color: "bg-green-500" });
   const textRef = useRef<HTMLTextAreaElement>(null);
+  const { enhance, isEnhancing } = useEnhanceText(ENHANCE_UPDATE_PROMPT);
+
+  async function handleEnhance() {
+    const improved = await enhance(form.content);
+    if (improved) setForm(f => ({ ...f, content: improved }));
+  }
 
   useEffect(() => { if (showForm && textRef.current) textRef.current.focus(); }, [showForm]);
 
@@ -73,14 +81,27 @@ export default function UpdatesTab({ projectId, authorName }: { projectId: strin
               placeholder="Título da entrega / atualização"
               className="w-full bg-white dark:bg-black/20 border border-zinc-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-navy dark:text-white focus:outline-none focus:border-blue-500"
             />
-            <textarea
-              ref={textRef}
-              value={form.content}
-              onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
-              rows={3}
-              placeholder="Descreva a entrega (opcional)..."
-              className="w-full bg-white dark:bg-black/20 border border-zinc-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-navy dark:text-white focus:outline-none focus:border-blue-500 resize-none"
-            />
+            <div>
+              <div className="flex justify-end mb-1">
+                <button
+                  type="button"
+                  onClick={handleEnhance}
+                  disabled={isEnhancing || !form.content.trim()}
+                  className="flex items-center gap-1.5 text-[11px] font-bold text-blue-600 hover:text-blue-700 disabled:opacity-40 transition-colors"
+                >
+                  <Sparkles size={12} className={isEnhancing ? "animate-spin" : ""} />
+                  {isEnhancing ? "Melhorando..." : "Melhorar com IA"}
+                </button>
+              </div>
+              <textarea
+                ref={textRef}
+                value={form.content}
+                onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
+                rows={3}
+                placeholder="Descreva a entrega (opcional)..."
+                className="w-full bg-white dark:bg-black/20 border border-zinc-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-navy dark:text-white focus:outline-none focus:border-blue-500 resize-none"
+              />
+            </div>
             {/* Status selector */}
             <div className="flex gap-2">
               {UPDATE_COLORS.map(c => (

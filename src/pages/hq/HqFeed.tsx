@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Plus, Heart, MessageCircle, Eye, Share2, Trash2, Image as ImageIcon, X, RefreshCw, Sparkles, FolderKanban } from "lucide-react";
 import { useTheVertice, TheVerticePost } from "@/hooks/data/useTheVertice";
 import { useProjects } from "@/hooks/data/useProjects";
+import { useEnhanceText } from "@/hooks/data/useEnhanceText";
+import { ENHANCE_MURAL_PROMPT } from "@/lib/enhancePrompts";
 import { TAGS, TAG_LABELS, profileName, profileRole, timeAgo, loadImageAsBase64 } from "@/lib/theVertice";
 import {
   Avatar,
@@ -402,6 +404,12 @@ function NewPostModal({
   const [content, setContent] = useState("");
   const [image, setImage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const { enhance, isEnhancing } = useEnhanceText(ENHANCE_MURAL_PROMPT);
+
+  async function handleEnhance() {
+    const improved = await enhance(content);
+    if (improved) setContent(improved);
+  }
 
   function reset() {
     setTag(TAGS[0]);
@@ -468,7 +476,18 @@ function NewPostModal({
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-zinc-500 mb-1.5">Conteúdo</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-bold text-zinc-500">Conteúdo</label>
+              <button
+                type="button"
+                onClick={handleEnhance}
+                disabled={isEnhancing || !content.trim()}
+                className="flex items-center gap-1.5 text-[11px] font-bold text-blue-600 hover:text-blue-700 disabled:opacity-40 transition-colors"
+              >
+                <Sparkles size={12} className={isEnhancing ? "animate-spin" : ""} />
+                {isEnhancing ? "Melhorando..." : "Melhorar com IA"}
+              </button>
+            </div>
             <MentionTextarea
               value={content}
               onChange={setContent}
