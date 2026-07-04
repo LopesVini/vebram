@@ -515,7 +515,7 @@ function PortalView({ reduce }: { reduce: boolean | null }) {
           </div>
         </motion.div>
 
-        <motion.div variants={panel} className="lg:col-span-2 bg-navy-dark text-white rounded-[2rem] p-8 shadow-2xl flex flex-col">
+        <motion.div variants={panel} className="lg:col-span-2 bg-navy-dark text-white rounded-[2rem] p-5 md:p-8 shadow-2xl flex flex-col">
           <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-accent/15 text-accent border border-accent/25 px-3 py-1 text-xs font-mono">
             <Sparkles size={13} /> O diferencial Vértice
           </span>
@@ -580,7 +580,7 @@ function PortalView({ reduce }: { reduce: boolean | null }) {
 
         <motion.div
           variants={panel}
-          className="lg:col-span-2 rounded-[2rem] p-8 shadow-2xl flex flex-col justify-between text-white"
+          className="lg:col-span-2 rounded-[2rem] p-5 md:p-8 shadow-2xl flex flex-col justify-between text-white"
           style={{ backgroundImage: "linear-gradient(135deg, hsl(var(--navy)), hsl(var(--accent)))" }}
         >
           <div>
