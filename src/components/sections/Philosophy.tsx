@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { responsiveMotion } from "@/lib/motion";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -10,37 +11,46 @@ const Philosophy = () => {
   const sectionRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
-    const ctx = gsap.context(() => {
-      gsap.to(".parallax-bg", {
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: "top bottom",
-          end: "bottom top",
-          scrub: true,
-        },
-        y: 150,
-        ease: "none"
-      });
-
-      const reveals = gsap.utils.toArray<HTMLElement>(".reveal-text");
-      reveals.forEach(text => {
-        gsap.from(text, {
+    const mm = responsiveMotion(sectionRef.current, {
+      full: () => {
+        gsap.to(".parallax-bg", {
           scrollTrigger: {
-            trigger: text,
-            start: "top 80%",
+            trigger: sectionRef.current,
+            start: "top bottom",
+            end: "bottom top",
+            scrub: true,
           },
-          y: 40,
-          opacity: 0,
-          duration: 1,
-          ease: "power3.out"
+          y: 150,
+          ease: "none",
         });
-      });
-    }, sectionRef);
-    return () => ctx.revert();
+        gsap.utils.toArray<HTMLElement>(".reveal-text").forEach((text) => {
+          gsap.from(text, {
+            scrollTrigger: { trigger: text, start: "top 80%" },
+            y: 40,
+            opacity: 0,
+            duration: 1,
+            ease: "power3.out",
+          });
+        });
+      },
+      light: () => {
+        // Mobile: só reveals suaves, sem parallax scrub.
+        gsap.utils.toArray<HTMLElement>(".reveal-text").forEach((text) => {
+          gsap.from(text, {
+            scrollTrigger: { trigger: text, start: "top 85%" },
+            y: 20,
+            opacity: 0,
+            duration: 0.7,
+            ease: "power2.out",
+          });
+        });
+      },
+    });
+    return () => mm.revert();
   }, []);
 
   return (
-    <section id="philosophy" ref={sectionRef} className="relative py-40 overflow-hidden bg-navy-dark text-white">
+    <section id="philosophy" ref={sectionRef} className="relative py-20 md:py-40 overflow-hidden bg-navy-dark text-white">
       {/* Parallax Background */}
       <div className="absolute inset-0 -top-[100px] -bottom-[100px] z-0 parallax-bg opacity-10">
         <img 
@@ -50,7 +60,7 @@ const Philosophy = () => {
         />
       </div>
 
-      <div className="relative z-10 max-w-5xl mx-auto px-6 md:px-12 lg:px-24 flex flex-col gap-24">
+      <div className="relative z-10 max-w-5xl mx-auto px-6 md:px-12 lg:px-24 flex flex-col gap-12 md:gap-24">
         
         <div>
           <p className="reveal-text text-white/50 text-xl md:text-2xl font-sans tracking-wide mb-4">
