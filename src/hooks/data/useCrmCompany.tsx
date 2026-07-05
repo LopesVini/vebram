@@ -42,7 +42,8 @@ export function CrmCompanyProvider({ children }: { children: ReactNode }) {
     const { data } = await supabase
       .from('memberships')
       .select('*, company:companies(*)')
-      .eq('user_id', user.id);
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: true });
     const list = (data as MembershipWithCompany[]) || [];
     setCompanies(list);
     setCompanyIdState(pickActiveCompany(list, localStorage.getItem(LS_KEY)));
