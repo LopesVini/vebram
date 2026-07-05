@@ -1,13 +1,15 @@
-import { Navigate, Outlet, NavLink, Link, useNavigate } from "react-router-dom";
+import { Navigate, Outlet, NavLink, Link, useNavigate, useLocation } from "react-router-dom";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/data/useAuth";
 import { useNotifications, timeAgo } from "@/hooks/data/useNotifications";
-import { Loader2, LogOut, LayoutDashboard, Briefcase, Users, Search, Bell, Settings, Sun, Moon, UserCircle, CheckCheck, Plus, UserPlus, ArrowRight, Command, Rss, CalendarDays, BarChart3 } from "lucide-react";
+import { Loader2, LogOut, LayoutDashboard, Briefcase, Users, Search, Bell, Settings, Sun, Moon, UserCircle, CheckCheck, Plus, UserPlus, ArrowRight, Command, Rss, CalendarDays, BarChart3, Gauge, Contact, KanbanSquare, ListChecks, SlidersHorizontal } from "lucide-react";
 import { useTheme } from "@/components/layout/ThemeProvider";
 import VerticeLogo from "@/components/layout/VerticeLogo";
 import FloatingChat from "@/components/chat/FloatingChat";
 import MobileTabBar from "@/components/layout/MobileTabBar";
 import { LightboxProvider } from "@/components/hq/thevertice/shared";
+import { CrmCompanyProvider } from "@/hooks/data/useCrmCompany";
+import CompanySwitcher from "@/components/hq/crm/CompanySwitcher";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,6 +42,11 @@ const COMMANDS: Cmd[] = [
   { id: "profile",     label: "Meu Perfil",      desc: "Configurações da sua conta",      icon: UserCircle,      path: "/hq/profile",      category: "Navegar",  keywords: ["perfil","conta","configurações","settings","profile"] },
   { id: "new-project", label: "Criar Projeto",   desc: "Abrir formulário de novo projeto",icon: Plus,            path: "/hq/projects?new=1", category: "Ações",  keywords: ["criar projeto","novo projeto","adicionar projeto","new project","add project"] },
   { id: "new-client",  label: "Criar Cliente",   desc: "Cadastrar um novo cliente",       icon: UserPlus,        path: "/hq/clients?new=1",  category: "Ações",  keywords: ["criar cliente","novo cliente","adicionar cliente","cadastrar cliente","new client"] },
+  { id: "crm",          label: "CRM",             desc: "Painel do CRM",                   icon: Gauge,             path: "/hq/crm",          category: "CRM", keywords: ["crm","funil","vendas","pipeline","leads","painel crm"] },
+  { id: "crm-leads",    label: "Leads",           desc: "Clientes e leads do CRM",         icon: Contact,           path: "/hq/crm/leads",    category: "CRM", keywords: ["leads","clientes","prospecção","prospeccao","contatos crm"] },
+  { id: "crm-pipeline", label: "Pipeline",        desc: "Funil de vendas (Kanban)",        icon: KanbanSquare,      path: "/hq/crm/pipeline", category: "CRM", keywords: ["pipeline","funil","kanban","etapas","negócios","negocios"] },
+  { id: "crm-tasks",    label: "Tarefas do CRM",  desc: "Follow-ups e próximas ações",     icon: ListChecks,        path: "/hq/crm/tasks",    category: "CRM", keywords: ["tarefas","follow-up","followup","próximas ações","proximas acoes","lembretes"] },
+  { id: "crm-settings", label: "Config. do CRM",  desc: "Etapas e regras de automação",    icon: SlidersHorizontal, path: "/hq/crm/settings", category: "CRM", keywords: ["configurações crm","configuracoes crm","etapas","regras","automação","automacao"] },
 ];
 
 function normalize(s: string) {
@@ -151,6 +158,7 @@ function CommandPalette({ onClose }: { onClose: () => void }) {
 export default function HqLayout() {
   const { session, loading, isAdmin, signOut, displayName } = useAuth();
   const { theme, setTheme } = useTheme();
+  const location = useLocation();
   const [showPalette, setShowPalette] = useState(false);
   const [showBell, setShowBell] = useState(false);
   const paletteRef = useRef<HTMLDivElement>(null);
@@ -198,8 +206,9 @@ export default function HqLayout() {
   }
 
   return (
+    <CrmCompanyProvider>
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-navy-dark text-navy dark:text-white flex transition-colors duration-300 font-sans">
-      
+
       {/* Sidebar - Reference Image Style */}
       <aside className="hidden lg:flex lg:w-[260px] bg-white dark:bg-navy-light/60 flex-col h-screen sticky top-0 z-40 transition-all duration-300 border-r border-transparent dark:border-white/5 shadow-[2px_0_10px_rgba(0,0,0,0.02)]">
         
@@ -223,6 +232,13 @@ export default function HqLayout() {
           <NavItem icon={<CalendarDays size={20} />} label="Calendário" to="/hq/calendar" />
           <NavItem icon={<BarChart3 size={20} />} label="Enquetes" to="/hq/polls" />
           <NavItem icon={<Users size={20} />} label="Membros" to="/hq/members" />
+
+          <p className="hidden lg:block text-xs font-bold text-zinc-400 mb-2 mt-4 px-4">CRM</p>
+          <NavItem icon={<Gauge size={20} />} label="Painel CRM" to="/hq/crm" end />
+          <NavItem icon={<Contact size={20} />} label="Leads" to="/hq/crm/leads" />
+          <NavItem icon={<KanbanSquare size={20} />} label="Pipeline" to="/hq/crm/pipeline" />
+          <NavItem icon={<ListChecks size={20} />} label="Tarefas" to="/hq/crm/tasks" />
+          <NavItem icon={<SlidersHorizontal size={20} />} label="Config" to="/hq/crm/settings" />
         </nav>
 
         {/* Bottom Section */}
@@ -267,6 +283,7 @@ export default function HqLayout() {
           </div>
 
           <div className="flex items-center gap-4">
+            {location.pathname.startsWith("/hq/crm") && <CompanySwitcher />}
             {/* Command Palette trigger */}
             <div ref={paletteRef} className="hidden md:block relative">
               <button
@@ -369,11 +386,13 @@ export default function HqLayout() {
           { icon: <CalendarDays size={20} />, label: "Agenda", to: "/hq/calendar" },
           { icon: <BarChart3 size={20} />, label: "Enquetes", to: "/hq/polls" },
           { icon: <Users size={20} />, label: "Membros", to: "/hq/members" },
+          { icon: <Gauge size={20} />, label: "CRM", to: "/hq/crm", end: true },
         ]}
       />
 
       <FloatingChat />
     </div>
+    </CrmCompanyProvider>
   );
 }
 
