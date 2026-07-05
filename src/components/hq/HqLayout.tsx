@@ -385,7 +385,6 @@ export default function HqLayout() {
           { icon: <Rss size={20} />, label: "Mural", to: "/hq/feed" },
           { icon: <CalendarDays size={20} />, label: "Agenda", to: "/hq/calendar" },
           { icon: <BarChart3 size={20} />, label: "Enquetes", to: "/hq/polls" },
-          { icon: <Users size={20} />, label: "Membros", to: "/hq/members" },
           { icon: <Gauge size={20} />, label: "CRM", to: "/hq/crm", end: true },
         ]}
       />
