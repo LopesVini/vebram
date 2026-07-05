@@ -27,7 +27,13 @@ export function filterSortClients(
   if (sort === 'name') {
     sorted.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
   } else if (sort === 'value') {
-    sorted.sort((a, b) => (b.estimated_value ?? -Infinity) - (a.estimated_value ?? -Infinity));
+    sorted.sort((a, b) => {
+      const av = a.estimated_value, bv = b.estimated_value;
+      if (av == null && bv == null) return 0;
+      if (av == null) return 1;
+      if (bv == null) return -1;
+      return bv - av;
+    });
   } else {
     sorted.sort((a, b) => b.entered_at.localeCompare(a.entered_at));
   }
@@ -66,7 +72,7 @@ export function useCrmClients(companyId: string | null) {
   async function updateClient(id: string, changes: Partial<Client>): Promise<{ error: Error | null }> {
     const prev = clients;
     setClients((cur) => cur.map((c) => (c.id === id ? { ...c, ...changes } : c)));
-    const { error } = await supabase.from('clients').update(changes).eq('id', id);
+    const { error } = await supabase.from('clients').update(changes).eq('id', id).eq('company_id', companyId);
     if (error) setClients(prev); // reverte
     return { error };
   }
@@ -74,7 +80,7 @@ export function useCrmClients(companyId: string | null) {
   async function deleteClient(id: string): Promise<{ error: Error | null }> {
     const prev = clients;
     setClients((cur) => cur.filter((c) => c.id !== id));
-    const { error } = await supabase.from('clients').delete().eq('id', id);
+    const { error } = await supabase.from('clients').delete().eq('id', id).eq('company_id', companyId);
     if (error) setClients(prev);
     return { error };
   }
@@ -87,10 +93,11 @@ export function useCrmClients(companyId: string | null) {
     const { error } = await updateClient(id, { stage_id: toStageId });
     if (error) return { error };
     if (companyId) {
-      await supabase.from('interactions').insert({
+      const { error: histError } = await supabase.from('interactions').insert({
         company_id: companyId, client_id: id, type: 'stage_change',
         body: null, metadata: { from_stage_id: fromStageId, to_stage_id: toStageId },
       });
+      if (histError) return { error: histError };
     }
     return { error: null };
   }
