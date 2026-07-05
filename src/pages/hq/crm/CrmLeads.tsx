@@ -7,7 +7,6 @@ import { useCrmCompany } from '@/hooks/data/useCrmCompany';
 import { useCrmClients, filterSortClients, type LeadFilter, type LeadSort, type NewLead } from '@/hooks/data/useCrmClients';
 import { useCrmStages } from '@/hooks/data/useCrmStages';
 import { useCrmMembers } from '@/hooks/data/useCrmMembers';
-import StageBadge from '@/components/hq/crm/StageBadge';
 import LeadFormDialog from '@/components/hq/crm/LeadFormDialog';
 import { CrmLoading, CrmNoAccess } from '@/components/hq/crm/CrmStates';
 import type { Client } from '@/hooks/data/crmTypes';
@@ -16,7 +15,7 @@ const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL',
 
 export default function CrmLeads() {
   const { companyId, loading: companyLoading } = useCrmCompany();
-  const { clients, loading, saveClient, updateClient, deleteClient } = useCrmClients(companyId);
+  const { clients, loading, saveClient, updateClient, deleteClient, moveClientStage } = useCrmClients(companyId);
   const { stages } = useCrmStages(companyId);
   const { members } = useCrmMembers(companyId);
   const navigate = useNavigate();
@@ -34,7 +33,6 @@ export default function CrmLeads() {
   }, [searchParams, setSearchParams]);
 
   const stageById = useMemo(() => Object.fromEntries(stages.map((s) => [s.id, s])), [stages]);
-  const ownerName = useMemo(() => Object.fromEntries(members.map((m) => [m.user_id, m.name])), [members]);
   const visible = useMemo(() => filterSortClients(clients, search, filter, sort), [clients, search, filter, sort]);
 
   const summary = useMemo(() => {
@@ -55,7 +53,9 @@ export default function CrmLeads() {
     setDeleteTarget(null);
   }
   async function changeStage(c: Client, stageId: string) {
-    const { error } = await updateClient(c.id, { stage_id: stageId || null });
+    const { error } = stageId
+      ? await moveClientStage(c.id, stageId)
+      : await updateClient(c.id, { stage_id: null });
     if (error) toast.error('Erro ao mudar etapa.');
   }
   async function changeOwner(c: Client, ownerId: string) {
