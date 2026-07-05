@@ -39,6 +39,12 @@ const HqFeed = lazy(() => import("./pages/hq/HqFeed"));
 const HqCalendar = lazy(() => import("./pages/hq/HqCalendar"));
 const HqPolls = lazy(() => import("./pages/hq/HqPolls"));
 const HqMembers = lazy(() => import("./pages/hq/HqMembers"));
+const CrmDashboard = lazy(() => import("./pages/hq/crm/CrmDashboard"));
+const CrmLeads = lazy(() => import("./pages/hq/crm/CrmLeads"));
+const CrmPipeline = lazy(() => import("./pages/hq/crm/CrmPipeline"));
+const CrmClientDetail = lazy(() => import("./pages/hq/crm/CrmClientDetail"));
+const CrmTasks = lazy(() => import("./pages/hq/crm/CrmTasks"));
+const CrmSettings = lazy(() => import("./pages/hq/crm/CrmSettings"));
 const Profile = lazy(() => import("./pages/Profile"));
 
 // Tela mostrada por instantes enquanto o arquivo da rota é baixado
@@ -130,6 +136,12 @@ const App = () => (
                 <Route path="calendar" element={<HqCalendar />} />
                 <Route path="polls" element={<HqPolls />} />
                 <Route path="members" element={<HqMembers />} />
+                <Route path="crm" element={<CrmDashboard />} />
+                <Route path="crm/leads" element={<CrmLeads />} />
+                <Route path="crm/pipeline" element={<CrmPipeline />} />
+                <Route path="crm/clients/:id" element={<CrmClientDetail />} />
+                <Route path="crm/tasks" element={<CrmTasks />} />
+                <Route path="crm/settings" element={<CrmSettings />} />
                 <Route path="profile" element={<Profile />} />
               </Route>
 
