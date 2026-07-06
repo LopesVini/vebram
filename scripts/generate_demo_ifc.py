@@ -69,8 +69,8 @@ wcs = ax3(pt3(0, 0, 0))
 CTX = w(f"IFCGEOMETRICREPRESENTATIONCONTEXT($,'Model',3,1.E-05,{wcs},$)")
 
 project = w(
-    f"IFCPROJECT({guid()},$,'Residencia Vertice',"
-    f"'Residencia unifamiliar de 2 pavimentos - modelo demo',$,$,$,({CTX}),{units})"
+    f"IFCPROJECT({guid()},$,'Residência Vértice',"
+    f"'Residência unifamiliar de 2 pavimentos — modelo demo',$,$,$,({CTX}),{units})"
 )
 
 DIR_Z = dir3(0, 0, 1)
@@ -80,11 +80,11 @@ site_lp = lp("$", ax3(pt3(0, 0, 0)))
 site = w(f"IFCSITE({guid()},$,'Terreno',$,$,{site_lp},$,$,.ELEMENT.,$,$,$,$,$)")
 
 bldg_lp = lp(site_lp, ax3(pt3(0, 0, 0)))
-building = w(f"IFCBUILDING({guid()},$,'Residencia Vertice',$,$,{bldg_lp},$,$,.ELEMENT.,$,$,$)")
+building = w(f"IFCBUILDING({guid()},$,'Residência Vértice',$,$,{bldg_lp},$,$,.ELEMENT.,$,$,$)")
 
 STOREYS = [
-    ("Fundacao", -0.60),
-    ("Terreo", 0.00),
+    ("Fundação", -0.60),
+    ("Térreo", 0.00),
     ("Pavimento Superior", 3.00),
     ("Cobertura", 6.00),
 ]
@@ -105,9 +105,9 @@ def style(name, r, g, b, transparency=0.0):
 
 
 ST_CONCRETO = style("Concreto", 0.72, 0.71, 0.69)
-ST_FUNDACAO = style("Concreto fundacao", 0.58, 0.57, 0.55)
+ST_FUNDACAO = style("Concreto fundação", 0.58, 0.57, 0.55)
 ST_PAREDE = style("Alvenaria", 0.93, 0.90, 0.84)
-ST_TELHA = style("Telha ceramica", 0.62, 0.28, 0.19)
+ST_TELHA = style("Telha cerâmica", 0.62, 0.28, 0.19)
 ST_VIDRO = style("Vidro", 0.52, 0.70, 0.85, 0.45)
 ST_MADEIRA = style("Madeira", 0.45, 0.30, 0.17)
 ST_TERRENO = style("Terreno", 0.42, 0.51, 0.36)
@@ -140,7 +140,7 @@ by_material: dict[str, list[str]] = {}
 
 FASES = {
     0: "Terreno",
-    1: "Fundacao",
+    1: "Fundação",
     2: "Estrutura",
     3: "Alvenaria",
     4: "Cobertura",
@@ -195,25 +195,25 @@ for (y0, y1, xc) in BEAM_LINES_Y:
     n += 1
 
 # Estrutura (fase 2)
-element("IFCSLAB", "Laje Terreo", [box(5.0, 4.0, 10.0, 8.0, 0.0, 0.15, ST_CONCRETO)],
+element("IFCSLAB", "Laje Térreo", [box(5.0, 4.0, 10.0, 8.0, 0.0, 0.15, ST_CONCRETO)],
         1, 2, "Concreto armado", ".FLOOR.")
 
 n = 1
 for cy in COL_Y:
     for cx in COL_X:
-        element("IFCCOLUMN", f"Pilar P{n} (Terreo)",
+        element("IFCCOLUMN", f"Pilar P{n} (Térreo)",
                 [box(cx, cy, 0.3, 0.3, 0.0, 3.0, ST_CONCRETO)],
                 1, 2, "Concreto armado", ".COLUMN.")
         n += 1
 
 n = 1
 for (x0, x1, yc) in BEAM_LINES_X:
-    element("IFCBEAM", f"Viga V{n} (Terreo)",
+    element("IFCBEAM", f"Viga V{n} (Térreo)",
             [box((x0 + x1) / 2, yc, x1 - x0, 0.2, 2.7, 0.3, ST_CONCRETO)],
             1, 2, "Concreto armado", ".BEAM.")
     n += 1
 for (y0, y1, xc) in BEAM_LINES_Y:
-    element("IFCBEAM", f"Viga V{n} (Terreo)",
+    element("IFCBEAM", f"Viga V{n} (Térreo)",
             [box(xc, (y0 + y1) / 2, 0.2, y1 - y0, 2.7, 0.3, ST_CONCRETO)],
             1, 2, "Concreto armado", ".BEAM.")
     n += 1
@@ -260,7 +260,7 @@ def wall_along_x(name, yc, x0, x1, z0, z1, openings, storey, fase):
         cur = a1
     if cur < x1:
         solids.append(box((cur + x1) / 2, yc, x1 - cur, WALL_T, z0, z1 - z0, ST_PAREDE))
-    return element("IFCWALL", name, solids, storey, fase, "Alvenaria ceramica", ".SOLIDWALL.")
+    return element("IFCWALL", name, solids, storey, fase, "Alvenaria cerâmica", ".SOLIDWALL.")
 
 
 def wall_along_y(name, xc, y0, y1, z0, z1, openings, storey, fase):
@@ -277,21 +277,21 @@ def wall_along_y(name, xc, y0, y1, z0, z1, openings, storey, fase):
         cur = a1
     if cur < y1:
         solids.append(box(xc, (cur + y1) / 2, WALL_T, y1 - cur, z0, z1 - z0, ST_PAREDE))
-    return element("IFCWALL", name, solids, storey, fase, "Alvenaria ceramica", ".SOLIDWALL.")
+    return element("IFCWALL", name, solids, storey, fase, "Alvenaria cerâmica", ".SOLIDWALL.")
 
 
 # Terreo: paredes de 0.15 a 2.7; janelas 1.15..2.35; porta 0.15..2.25
-wall_along_x("Parede Frontal (Terreo)", 0.3, 0.15, 9.85, 0.15, 2.7,
+wall_along_x("Parede Frontal (Térreo)", 0.3, 0.15, 9.85, 0.15, 2.7,
              [(1.3, 2.3, "porta", 0, 2.25),
               (4.0, 5.5, "janela", 1.15, 2.35),
               (7.0, 8.5, "janela", 1.15, 2.35)], 1, 3)
-wall_along_x("Parede Fundos (Terreo)", 7.7, 0.15, 9.85, 0.15, 2.7,
+wall_along_x("Parede Fundos (Térreo)", 7.7, 0.15, 9.85, 0.15, 2.7,
              [(2.0, 3.5, "janela", 1.15, 2.35)], 1, 3)
-wall_along_y("Parede Oeste (Terreo)", 0.3, 0.45, 7.55, 0.15, 2.7,
+wall_along_y("Parede Oeste (Térreo)", 0.3, 0.45, 7.55, 0.15, 2.7,
              [(3.0, 4.5, "janela", 1.15, 2.35)], 1, 3)
-wall_along_y("Parede Leste (Terreo)", 9.7, 0.45, 7.55, 0.15, 2.7,
+wall_along_y("Parede Leste (Térreo)", 9.7, 0.45, 7.55, 0.15, 2.7,
              [(3.0, 4.5, "janela", 1.15, 2.35)], 1, 3)
-wall_along_y("Parede Interna (Terreo)", 5.0, 0.45, 7.55, 0.15, 2.7,
+wall_along_y("Parede Interna (Térreo)", 5.0, 0.45, 7.55, 0.15, 2.7,
              [(3.5, 4.5, "porta", 0, 2.25)], 1, 3)
 
 # Superior: paredes de 3.15 a 5.55; janelas 4.15..5.35
@@ -312,21 +312,21 @@ prof_pos_a = w(f"IFCAXIS2PLACEMENT2D({pt2(5.3, SLOPE / 2)},$)")
 prof_a = w(f"IFCRECTANGLEPROFILEDEF(.AREA.,$,{prof_pos_a},{num(10.6)},{num(SLOPE)})")
 solid_a = w(f"IFCEXTRUDEDAREASOLID({prof_a},{roof_a},{DIR_Z},{num(0.12)})")
 w(f"IFCSTYLEDITEM({solid_a},({ST_TELHA}),$)")
-element("IFCSLAB", "Telhado - Agua Sul", [solid_a], 3, 4, "Telha ceramica", ".ROOF.")
+element("IFCSLAB", "Telhado - Água Sul", [solid_a], 3, 4, "Telha cerâmica", ".ROOF.")
 
 roof_b = ax3(pt3(10.3, 8.3, 6.0), dir3(0, SIN, COS), dir3(-1, 0, 0))
 prof_pos_b = w(f"IFCAXIS2PLACEMENT2D({pt2(5.3, SLOPE / 2)},$)")
 prof_b = w(f"IFCRECTANGLEPROFILEDEF(.AREA.,$,{prof_pos_b},{num(10.6)},{num(SLOPE)})")
 solid_b = w(f"IFCEXTRUDEDAREASOLID({prof_b},{roof_b},{DIR_Z},{num(0.12)})")
 w(f"IFCSTYLEDITEM({solid_b},({ST_TELHA}),$)")
-element("IFCSLAB", "Telhado - Agua Norte", [solid_b], 3, 4, "Telha ceramica", ".ROOF.")
+element("IFCSLAB", "Telhado - Água Norte", [solid_b], 3, 4, "Telha cerâmica", ".ROOF.")
 
 # Empenas (triangulos de alvenaria nas extremidades, plano YZ)
 empena_pts = [(0.15, 0.0), (7.85, 0.0), (4.0, 1.68)]
 emp_w = tri_prism(empena_pts, ax3(pt3(0.15, 0, 6.0), dir3(1, 0, 0), dir3(0, 1, 0)), 0.15, ST_PAREDE)
-element("IFCWALL", "Empena Oeste", [emp_w], 3, 4, "Alvenaria ceramica", ".SOLIDWALL.")
+element("IFCWALL", "Empena Oeste", [emp_w], 3, 4, "Alvenaria cerâmica", ".SOLIDWALL.")
 emp_e = tri_prism(empena_pts, ax3(pt3(9.7, 0, 6.0), dir3(1, 0, 0), dir3(0, 1, 0)), 0.15, ST_PAREDE)
-element("IFCWALL", "Empena Leste", [emp_e], 3, 4, "Alvenaria ceramica", ".SOLIDWALL.")
+element("IFCWALL", "Empena Leste", [emp_e], 3, 4, "Alvenaria cerâmica", ".SOLIDWALL.")
 
 # Esquadrias (fase 5)
 def window(name, cx, cy_or_cx_fixed, along, sill, top, width, storey):
@@ -341,18 +341,18 @@ def window(name, cx, cy_or_cx_fixed, along, sill, top, width, storey):
 
 window("Janela J1 (Sala)", 4.75, 0.3, "x", 1.15, 2.35, 1.5, 1)
 window("Janela J2 (Cozinha)", 7.75, 0.3, "x", 1.15, 2.35, 1.5, 1)
-window("Janela J3 (Servico)", 2.75, 7.7, "x", 1.15, 2.35, 1.5, 1)
-window("Janela J4 (Escritorio)", 3.75, 0.3, "y", 1.15, 2.35, 1.5, 1)
+window("Janela J3 (Serviço)", 2.75, 7.7, "x", 1.15, 2.35, 1.5, 1)
+window("Janela J4 (Escritório)", 3.75, 0.3, "y", 1.15, 2.35, 1.5, 1)
 window("Janela J5 (Banheiro)", 3.75, 9.7, "y", 1.15, 2.35, 1.5, 1)
 window("Janela J6 (Quarto 1)", 2.6, 0.3, "x", 4.15, 5.35, 1.2, 2)
 window("Janela J7 (Quarto 2)", 7.4, 0.3, "x", 4.15, 5.35, 1.2, 2)
 
 element("IFCDOOR", "Porta de Entrada",
         [box(1.8, 0.3, 1.0, 0.07, 0.15, 2.1, ST_MADEIRA)],
-        1, 5, "Madeira macica", f"{num(2.1)},{num(1.0)},.DOOR.,.NOTDEFINED.,$")
+        1, 5, "Madeira maciça", f"{num(2.1)},{num(1.0)},.DOOR.,.NOTDEFINED.,$")
 element("IFCDOOR", "Porta Interna",
         [box(5.0, 4.0, 0.07, 1.0, 0.15, 2.1, ST_MADEIRA)],
-        1, 5, "Madeira macica", f"{num(2.1)},{num(1.0)},.DOOR.,.NOTDEFINED.,$")
+        1, 5, "Madeira maciça", f"{num(2.1)},{num(1.0)},.DOOR.,.NOTDEFINED.,$")
 
 # ── Relacoes ─────────────────────────────────────────────────────────────────
 w(f"IFCRELAGGREGATES({guid()},$,$,$,{project},({site}))")

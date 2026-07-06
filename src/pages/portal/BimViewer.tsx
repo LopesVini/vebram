@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import {
   Box, Layers, Loader2, Maximize2, Search, ChevronRight, Eye, AlertCircle,
-  Expand, Shrink, Camera,
+  Expand, Shrink, Camera, CheckCircle2, Circle, Hammer,
 } from "lucide-react";
 import * as THREE from "three";
 import { OrbitControls } from "three-stdlib";
@@ -682,6 +682,7 @@ function TreeNodeView({
 function PanelContent({
   search, setSearch, tree, hasModel, info, loading,
   selectedId, onSelect, forceOpen, ancestorIds, selectedProps,
+  clientMode, phaseData, phaseIdx, onPhaseSelect, progressPct, selectedPhaseName,
 }: {
   search: string;
   setSearch: (v: string) => void;
@@ -694,7 +695,90 @@ function PanelContent({
   forceOpen: boolean;
   ancestorIds: Set<number>;
   selectedProps: ElementProps | null;
+  clientMode: boolean;
+  phaseData: PhaseData | null;
+  phaseIdx: number;
+  onPhaseSelect: (idx: number) => void;
+  progressPct: number;
+  selectedPhaseName?: string;
 }) {
+  if (clientMode) {
+    return (
+      <>
+        {/* Progresso no lugar de honra */}
+        <div className="mb-4 p-3 rounded-xl bg-primary/10 border border-primary/20 shrink-0">
+          <p className="text-[10px] font-bold text-zinc-500 mb-1 tracking-widest">PROGRESSO DA OBRA</p>
+          <div className="flex items-end gap-2">
+            <span className="text-3xl font-black text-primary leading-none">{progressPct}%</span>
+            <span className="text-[10px] text-zinc-500 mb-0.5">concluído</span>
+          </div>
+          <div className="mt-2 h-1.5 rounded-full bg-zinc-200 dark:bg-white/10 overflow-hidden">
+            <div
+              className="h-full bg-primary rounded-full transition-all duration-300"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto pr-1">
+          <p className="text-[10px] font-bold text-zinc-500 mb-2 tracking-widest">ETAPAS DA OBRA</p>
+          {!phaseData && !loading && (
+            <p className="text-xs text-zinc-400 px-2 py-3">Etapas ainda não definidas para este projeto.</p>
+          )}
+          {phaseData?.phases.map((p, i) => {
+            const status = i < phaseIdx ? "done" : i === phaseIdx ? "current" : "future";
+            const StatusIcon = status === "done" ? CheckCircle2 : status === "current" ? Hammer : Circle;
+            return (
+              <button
+                key={p.num}
+                onClick={() => onPhaseSelect(i)}
+                className={`w-full flex items-center gap-2.5 p-2 rounded-lg text-left transition-colors mb-1 ${
+                  status === "current"
+                    ? "bg-primary/15 ring-1 ring-primary/40"
+                    : "hover:bg-zinc-50 dark:hover:bg-white/5"
+                }`}
+              >
+                <StatusIcon
+                  size={15}
+                  className={`shrink-0 ${
+                    status === "done" ? "text-green-500" : status === "current" ? "text-primary" : "text-zinc-400"
+                  }`}
+                />
+                <span className={`text-xs font-bold flex-1 ${
+                  status === "future" ? "text-zinc-400" : "text-navy dark:text-white"
+                }`}>
+                  {p.name}
+                </span>
+                <span className="text-[9px] font-bold text-zinc-400">
+                  {status === "done" ? "Concluída" : status === "current" ? "Em andamento" : "Prevista"}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {selectedProps && (
+          <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-white/10 shrink-0">
+            <p className="text-[10px] font-bold text-zinc-500 mb-2 tracking-widest">ITEM SELECIONADO</p>
+            <div className="text-[10px] space-y-1">
+              {([
+                ["Nome", selectedProps.name],
+                ["Etapa", selectedPhaseName],
+                ["Pavimento", selectedProps.storey],
+                ["Material", selectedProps.material],
+              ] as const).filter(([, v]) => v).map(([label, value]) => (
+                <div key={label} className="flex justify-between gap-2">
+                  <span className="text-zinc-500 shrink-0">{label}</span>
+                  <span className="text-navy dark:text-white text-right truncate" title={value}>{value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
+
   return (
     <>
       <div className="relative mb-4">
@@ -769,6 +853,31 @@ function PanelContent({
 // ─────────────────────────────────────────────────────────────────────────────
 // Main page
 // ─────────────────────────────────────────────────────────────────────────────
+// Alternância Modo Cliente ↔ Modo Técnico
+const BIM_MODE_KEY = "vertice-bim-mode";
+
+function ModeToggle({
+  clientMode, onChange,
+}: { clientMode: boolean; onChange: (client: boolean) => void }) {
+  return (
+    <div className="flex rounded-lg overflow-hidden border border-zinc-200 dark:border-white/10 shadow-lg shrink-0">
+      {([[true, "CLIENTE"], [false, "TÉCNICO"]] as const).map(([isClient, label]) => (
+        <button
+          key={label}
+          onClick={() => onChange(isClient)}
+          className={`px-3 py-2 text-[10px] font-bold transition-colors ${
+            clientMode === isClient
+              ? "bg-primary text-white"
+              : "bg-white dark:bg-navy-light/80 text-zinc-500 hover:text-navy dark:hover:text-white"
+          }`}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 // Botão compacto das ferramentas de visibilidade
 function ToolBtn({
   children, onClick, active = false,
@@ -814,6 +923,15 @@ export default function BimViewer() {
   const [clip, setClip] = useState<{ axis: "x" | "y" | "z" | null; t: number }>({ axis: null, t: 0.5 });
   const [phaseData, setPhaseData] = useState<PhaseData | null>(null);
   const [phaseIdx, setPhaseIdx]   = useState(0); // índice em phaseData.phases
+  const [clientMode, setClientMode] = useState<boolean>(
+    () => localStorage.getItem(BIM_MODE_KEY) !== "tecnico",
+  );
+
+  const handleModeChange = useCallback((client: boolean) => {
+    setClientMode(client);
+    localStorage.setItem(BIM_MODE_KEY, client ? "cliente" : "tecnico");
+    if (client) setSearch(""); // limpa filtro/highlight técnico ao humanizar
+  }, []);
 
   const meshMapRef = useRef<Map<number, THREE.Mesh[]>>(new Map());
   const pointerDownRef = useRef<{ x: number; y: number } | null>(null);
@@ -901,6 +1019,13 @@ export default function BimViewer() {
       });
     });
   }, [hiddenIds, visMode, info, phaseData, phaseIdx]);
+
+  // Nome da etapa do elemento selecionado (rótulo amigável do modo cliente)
+  const selectedPhaseName = useMemo(() => {
+    if (!phaseData || selectedId === null) return undefined;
+    const num = phaseData.byElement.get(selectedId);
+    return phaseData.phases.find(p => p.num === num)?.name;
+  }, [phaseData, selectedId]);
 
   // % da obra: elementos com fase liberada / total de elementos com fase
   const progressPct = useMemo(() => {
@@ -1104,7 +1229,8 @@ export default function BimViewer() {
             Modelo BIM Integrado
           </h1>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <ModeToggle clientMode={clientMode} onChange={handleModeChange} />
           <button
             onClick={fitToModel}
             className="px-4 py-2 bg-primary text-white text-xs font-bold rounded hover:bg-primary/90 transition-colors flex items-center gap-2"
@@ -1124,6 +1250,9 @@ export default function BimViewer() {
             selectedId={selectedId} onSelect={handleSelectNode}
             forceOpen={!!query} ancestorIds={ancestorIds}
             selectedProps={selectedProps}
+            clientMode={clientMode} phaseData={phaseData} phaseIdx={phaseIdx}
+            onPhaseSelect={setPhaseIdx} progressPct={progressPct}
+            selectedPhaseName={selectedPhaseName}
           />
         </div>
 
@@ -1156,21 +1285,43 @@ export default function BimViewer() {
 
           {/* Overlay info */}
           <div className="absolute top-4 left-4 right-4 flex justify-between items-start z-10 pointer-events-none">
-            <div className="bg-white/80 dark:bg-black/60 backdrop-blur-md border border-zinc-200 dark:border-white/10 p-3 rounded-lg hidden lg:flex items-center gap-4 pointer-events-auto shadow-lg">
-              <div>
-                <p className="text-[10px] text-zinc-500">VIEWER</p>
-                <p className="text-xs font-bold text-navy dark:text-white">
-                  {isProjectModel ? "Modelo do Projeto" : "three.js + web-ifc"}
-                </p>
+            <div className="flex flex-col gap-2 items-start">
+              {/* Toggle de modo (mobile; desktop fica no header) */}
+              <div className="lg:hidden pointer-events-auto">
+                <ModeToggle clientMode={clientMode} onChange={handleModeChange} />
               </div>
-              {info && (
-                <>
-                  <div className="w-px h-8 bg-zinc-300 dark:bg-white/10" />
-                  <div>
-                    <p className="text-[10px] text-zinc-500">ELEMENTOS</p>
-                    <p className="text-xs font-bold text-primary">{info.meshCount} meshes</p>
+              {clientMode ? (
+                info && (
+                  <div className="bg-white/80 dark:bg-black/60 backdrop-blur-md border border-zinc-200 dark:border-white/10 p-3 rounded-lg hidden lg:block pointer-events-auto shadow-lg">
+                    <p className="text-[10px] text-zinc-500">PROGRESSO DA OBRA</p>
+                    <p className="text-sm font-black text-primary">
+                      {progressPct}%
+                      {phaseData && (
+                        <span className="ml-2 text-xs font-bold text-navy dark:text-white">
+                          {phaseData.phases[phaseIdx]?.name}
+                        </span>
+                      )}
+                    </p>
                   </div>
-                </>
+                )
+              ) : (
+                <div className="bg-white/80 dark:bg-black/60 backdrop-blur-md border border-zinc-200 dark:border-white/10 p-3 rounded-lg hidden lg:flex items-center gap-4 pointer-events-auto shadow-lg">
+                  <div>
+                    <p className="text-[10px] text-zinc-500">VIEWER</p>
+                    <p className="text-xs font-bold text-navy dark:text-white">
+                      {isProjectModel ? "Modelo do Projeto" : "three.js + web-ifc"}
+                    </p>
+                  </div>
+                  {info && (
+                    <>
+                      <div className="w-px h-8 bg-zinc-300 dark:bg-white/10" />
+                      <div>
+                        <p className="text-[10px] text-zinc-500">ELEMENTOS</p>
+                        <p className="text-xs font-bold text-primary">{info.meshCount} meshes</p>
+                      </div>
+                    </>
+                  )}
+                </div>
               )}
             </div>
 
@@ -1323,6 +1474,9 @@ export default function BimViewer() {
           selectedId={selectedId} onSelect={handleSelectNode}
           forceOpen={!!query} ancestorIds={ancestorIds}
           selectedProps={selectedProps}
+          clientMode={clientMode} phaseData={phaseData} phaseIdx={phaseIdx}
+          onPhaseSelect={setPhaseIdx} progressPct={progressPct}
+          selectedPhaseName={selectedPhaseName}
         />
       </BimBottomSheet>
     </div>
