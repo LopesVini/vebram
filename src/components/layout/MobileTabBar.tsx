@@ -22,7 +22,7 @@ export default function MobileTabBar({ tabs }: { tabs: MobileTab[] }) {
             end={tab.end}
             className={({ isActive }) =>
               `flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors ${
-                isActive ? "text-primary" : "text-zinc-500 dark:text-zinc-400"
+                isActive ? "text-primary dark:text-accent" : "text-zinc-500 dark:text-zinc-400"
               }`
             }
           >

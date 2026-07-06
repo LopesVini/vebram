@@ -13,13 +13,13 @@ function fmtDate(iso: string) {
 const STATUS_MAP: Record<string, { label: string; cls: string }> = {
   approved: { label: "Aprovado",   cls: "bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20" },
   pending:  { label: "Informativo", cls: "bg-accent/10 text-accent border border-accent/20" },
-  revision: { label: "Em Revisão", cls: "bg-primary/10 text-primary border border-primary/20" },
+  revision: { label: "Em Revisão", cls: "bg-primary/10 dark:bg-accent/10 text-primary dark:text-accent border border-primary/20 dark:border-accent/20" },
 };
 
 const DOT_MAP: Record<string, string> = {
   approved: "bg-green-500",
   pending:  "bg-accent",
-  revision: "bg-primary",
+  revision: "bg-primary dark:bg-accent",
 };
 
 // Cartão de uma entrega na timeline. A APROVAÇÃO não acontece aqui — ela vive
@@ -56,7 +56,7 @@ function TimelineCard({ upd }: { upd: Update }) {
         <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-white/5">
           <button
             onClick={() => setShowComments((v) => !v)}
-            className="text-xs font-bold text-zinc-500 hover:text-primary transition-colors flex items-center gap-2"
+            className="text-xs font-bold text-zinc-500 hover:text-primary dark:hover:text-accent transition-colors flex items-center gap-2"
           >
             <MessageSquare size={14} /> {showComments ? "OCULTAR COMENTÁRIOS" : "COMENTAR"}
           </button>

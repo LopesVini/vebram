@@ -190,7 +190,7 @@ export default function HqLayout() {
   if (loading) {
     return (
       <div className="min-h-screen bg-zinc-50 dark:bg-[#0A0A0A] flex flex-col items-center justify-center transition-colors">
-        <Loader2 className="w-8 h-8 text-primary animate-spin mb-4" />
+        <Loader2 className="w-8 h-8 text-primary dark:text-accent animate-spin mb-4" />
         <p className="text-zinc-500 font-mono text-sm tracking-widest animate-pulse">
           INICIANDO SESSÃO HQ...
         </p>

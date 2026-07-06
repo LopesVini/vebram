@@ -628,7 +628,7 @@ function TreeNodeView({
         onClick={() => onSelect(node)}
         className={`flex items-center gap-2 p-1.5 rounded-lg cursor-pointer transition-colors group text-navy dark:text-white ${
           isSelected
-            ? "bg-primary/15 ring-1 ring-primary/40"
+            ? "bg-primary/15 dark:bg-accent/15 ring-1 ring-primary/40 dark:ring-accent/40"
             : "hover:bg-zinc-50 dark:hover:bg-white/5"
         }`}
         style={{ paddingLeft: `${depth * 12 + 8}px` }}
@@ -642,7 +642,7 @@ function TreeNodeView({
             <ChevronRight size={13} className={`text-zinc-500 transition-transform ${isOpen ? "rotate-90" : ""}`} />
           </button>
         ) : <span className="w-[13px] shrink-0" />}
-        <Icon size={13} className="text-primary shrink-0" />
+        <Icon size={13} className="text-primary dark:text-accent shrink-0" />
         <span className="text-xs font-bold truncate">{node.name}</span>
       </div>
       {isOpen && node.children.map(c => (
@@ -688,15 +688,15 @@ function PanelContent({
       <>
         {/* Progresso no lugar de honra */}
         {phaseData && (
-        <div className="mb-4 p-3 rounded-xl bg-primary/10 border border-primary/20 shrink-0">
+        <div className="mb-4 p-3 rounded-xl bg-primary/10 dark:bg-accent/10 border border-primary/20 dark:border-accent/20 shrink-0">
           <p className="text-[10px] font-bold text-zinc-500 mb-1 tracking-widest">PROGRESSO DA OBRA</p>
           <div className="flex items-end gap-2">
-            <span className="text-3xl font-black text-primary leading-none">{progressPct}%</span>
+            <span className="text-3xl font-black text-primary dark:text-accent leading-none">{progressPct}%</span>
             <span className="text-[10px] text-zinc-500 mb-0.5">concluído</span>
           </div>
           <div className="mt-2 h-1.5 rounded-full bg-zinc-200 dark:bg-white/10 overflow-hidden">
             <div
-              className="h-full bg-primary rounded-full transition-all duration-300"
+              className="h-full bg-primary dark:bg-accent rounded-full transition-all duration-300"
               style={{ width: `${progressPct}%` }}
             />
           </div>
@@ -717,14 +717,14 @@ function PanelContent({
                 onClick={() => onPhaseSelect(i)}
                 className={`w-full flex items-center gap-2.5 p-2 rounded-lg text-left transition-colors mb-1 ${
                   status === "current"
-                    ? "bg-primary/15 ring-1 ring-primary/40"
+                    ? "bg-primary/15 dark:bg-accent/15 ring-1 ring-primary/40 dark:ring-accent/40"
                     : "hover:bg-zinc-50 dark:hover:bg-white/5"
                 }`}
               >
                 <StatusIcon
                   size={15}
                   className={`shrink-0 ${
-                    status === "done" ? "text-green-500" : status === "current" ? "text-primary" : "text-zinc-400"
+                    status === "done" ? "text-green-500" : status === "current" ? "text-primary dark:text-accent" : "text-zinc-400"
                   }`}
                 />
                 <span className={`text-xs font-bold flex-1 ${
@@ -769,7 +769,7 @@ function PanelContent({
         <input
           type="text" value={search} onChange={e => setSearch(e.target.value)}
           placeholder="Buscar elementos..."
-          className="w-full bg-zinc-50 dark:bg-black/20 border border-zinc-200 dark:border-white/10 rounded-lg pl-9 pr-4 py-2 text-xs text-navy dark:text-white focus:outline-none focus:border-primary transition-colors"
+          className="w-full bg-zinc-50 dark:bg-black/20 border border-zinc-200 dark:border-white/10 rounded-lg pl-9 pr-4 py-2 text-xs text-navy dark:text-white focus:outline-none focus:border-primary dark:focus:border-accent transition-colors"
         />
       </div>
 
@@ -943,7 +943,7 @@ function CurationPanel({
               <button
                 onClick={() => onAssign(p.id)}
                 disabled={selCount === 0}
-                className="px-2 py-0.5 rounded bg-primary/15 text-primary font-bold disabled:opacity-40 hover:bg-primary/25 transition-colors"
+                className="px-2 py-0.5 rounded bg-primary/15 dark:bg-accent/15 text-primary dark:text-accent font-bold disabled:opacity-40 hover:bg-primary/25 dark:hover:bg-accent/25 transition-colors"
               >
                 Atribuir
               </button>
@@ -964,7 +964,7 @@ function CurationPanel({
               onChange={e => setNewPhaseName(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter") onCreatePhase(); }}
               placeholder="Nova fase..."
-              className="flex-1 min-w-0 bg-white dark:bg-black/20 border border-zinc-200 dark:border-white/10 rounded px-2 py-1 text-[10px] text-navy dark:text-white focus:outline-none focus:border-primary"
+              className="flex-1 min-w-0 bg-white dark:bg-black/20 border border-zinc-200 dark:border-white/10 rounded px-2 py-1 text-[10px] text-navy dark:text-white focus:outline-none focus:border-primary dark:focus:border-accent"
             />
             <button
               onClick={onCreatePhase}
@@ -989,8 +989,8 @@ function ToolBtn({
       onClick={onClick}
       className={`px-2.5 py-1.5 text-[10px] font-bold rounded-lg border shadow-lg transition-colors ${
         active
-          ? "bg-primary text-white border-primary"
-          : "bg-white dark:bg-navy-light/80 text-zinc-600 dark:text-zinc-300 border-zinc-200 dark:border-white/10 hover:border-primary"
+          ? "bg-primary dark:bg-accent text-white border-primary dark:border-accent"
+          : "bg-white dark:bg-navy-light/80 text-zinc-600 dark:text-zinc-300 border-zinc-200 dark:border-white/10 hover:border-primary dark:hover:border-accent"
       }`}
     >
       {children}
@@ -1544,7 +1544,7 @@ export function BimWorkspace({
                 info && phaseLookup && (
                   <div className="bg-white/80 dark:bg-black/60 backdrop-blur-md border border-zinc-200 dark:border-white/10 p-3 rounded-lg hidden lg:block pointer-events-auto shadow-lg">
                     <p className="text-[10px] text-zinc-500">PROGRESSO DA OBRA</p>
-                    <p className="text-sm font-black text-primary">
+                    <p className="text-sm font-black text-primary dark:text-accent">
                       {progressPct}%
                       <span className="ml-2 text-xs font-bold text-navy dark:text-white">
                         {phaseLookup.phases[phaseIdx]?.name}
@@ -1565,7 +1565,7 @@ export function BimWorkspace({
                       <div className="w-px h-8 bg-zinc-300 dark:bg-white/10" />
                       <div>
                         <p className="text-[10px] text-zinc-500">ELEMENTOS</p>
-                        <p className="text-xs font-bold text-primary">{info.meshCount} meshes</p>
+                        <p className="text-xs font-bold text-primary dark:text-accent">{info.meshCount} meshes</p>
                       </div>
                     </>
                   )}
@@ -1645,7 +1645,7 @@ export function BimWorkspace({
           {/* Loading overlay */}
           {loading && (
             <div className="absolute inset-0 z-20 bg-black/40 backdrop-blur-sm flex flex-col items-center justify-center gap-3">
-              <Loader2 className="w-8 h-8 text-primary animate-spin" />
+              <Loader2 className="w-8 h-8 text-primary dark:text-accent animate-spin" />
               <p className="text-xs text-white/80 font-mono tracking-wider">{progress || "Carregando..."}</p>
             </div>
           )}
@@ -1688,7 +1688,7 @@ export function BimWorkspace({
             step={1}
             value={phaseIdx}
             onChange={e => setPhaseIdx(Number(e.target.value))}
-            className="flex-1 min-w-0 accent-primary"
+            className="flex-1 min-w-0 accent-primary dark:accent-accent"
             aria-label="Fase da obra"
           />
           <div className="hidden lg:flex gap-1 shrink-0">
@@ -1698,7 +1698,7 @@ export function BimWorkspace({
                 onClick={() => setPhaseIdx(i)}
                 className={`px-2 py-1 text-[9px] font-bold rounded transition-colors ${
                   i <= phaseIdx
-                    ? "bg-primary/15 text-primary"
+                    ? "bg-primary/15 dark:bg-accent/15 text-primary dark:text-accent"
                     : "bg-zinc-100 dark:bg-white/5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
                 }`}
               >
@@ -1710,7 +1710,7 @@ export function BimWorkspace({
             <p className="text-xs font-bold text-navy dark:text-white truncate">
               {phaseLookup.phases[phaseIdx]?.name}
             </p>
-            <p className="text-[10px] text-primary font-bold">{progressPct}% da obra</p>
+            <p className="text-[10px] text-primary dark:text-accent font-bold">{progressPct}% da obra</p>
           </div>
         </div>
       )}

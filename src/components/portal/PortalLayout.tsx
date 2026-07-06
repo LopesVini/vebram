@@ -22,7 +22,7 @@ export default function PortalLayout() {
   if (loading) {
     return (
       <div className="min-h-screen bg-zinc-50 dark:bg-[#0A0A0A] flex flex-col items-center justify-center transition-colors">
-        <Loader2 className="w-8 h-8 text-primary animate-spin mb-4" />
+        <Loader2 className="w-8 h-8 text-primary dark:text-accent animate-spin mb-4" />
         <p className="text-zinc-500 font-mono text-sm tracking-widest animate-pulse">
           INICIANDO SESSÃO...
         </p>
@@ -84,7 +84,7 @@ export default function PortalLayout() {
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-10 h-10 rounded-md bg-white dark:bg-navy-dark border border-zinc-200 dark:border-white/10 flex items-center justify-center overflow-hidden shrink-0">
-                    <User className="w-5 h-5 text-zinc-400 group-hover:text-primary transition-colors" />
+                    <User className="w-5 h-5 text-zinc-400 group-hover:text-primary dark:group-hover:text-accent transition-colors" />
                   </div>
                   <div className="hidden lg:block text-left min-w-0">
                     <p className="text-sm font-bold font-sans tracking-tight text-navy dark:text-white leading-tight truncate">
