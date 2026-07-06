@@ -4,6 +4,7 @@ import { Box, Upload, Trash2, Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import type { Project } from "@/hooks/data/useProjects";
 import { useProjectIfc, storagePath } from "@/hooks/data/useProjectIfc";
+import { BimWorkspace } from "@/pages/portal/BimViewer";
 
 export default function BimTab({ project }: { project: Project }) {
   const { uploadIfc, deleteIfc, uploading, deleting } = useProjectIfc();
@@ -185,6 +186,20 @@ export default function BimTab({ project }: { project: Project }) {
           Cada projeto tem <strong className="text-zinc-600 dark:text-zinc-300">um único modelo IFC</strong>. Enviar um novo substitui o anterior. Somente administradores podem fazer upload.
         </p>
       </div>
+
+      {/* Viewer + curadoria de fases (linha do tempo do portal) */}
+      {currentUrl && (
+        <div className="pt-2">
+          <p className="text-[10px] font-bold text-zinc-400 tracking-widest uppercase mb-3">
+            Viewer &amp; curadoria de fases
+          </p>
+          <BimWorkspace
+            project={{ id: project.id, name: project.name, ifc_url: currentUrl }}
+            adminMode
+            variant="hq"
+          />
+        </div>
+      )}
     </div>
   );
 }

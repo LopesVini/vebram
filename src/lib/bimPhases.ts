@@ -1,78 +1,65 @@
 // Fases de execução da obra para a linha do tempo do viewer BIM.
 //
-// Fonte primária: pset por elemento no IFC (ex.: "Vertice_Execucao" com as
-// propriedades Fase/Etapa, como no modelo demo gerado por
-// scripts/generate_demo_ifc.py). Quando o modelo não traz fase, o fallback
-// classifica cada elemento pelas regras abaixo (tipo IFC + nome do pavimento).
+// Fonte de verdade: atribuição curada manualmente no HQ e gravada na tabela
+// `bim_phases` ({ project_id, seq, name, elements: [GlobalId, ...] }).
+// O vínculo elemento→fase usa o GlobalId do IFC (IfcGloballyUniqueId), que é
+// estável entre reexportações do arquivo — nunca o expressID interno do
+// web-ifc, que muda a cada reexportação. O IFC em si não traz metadado de
+// fase confiável, então nada é inferido do arquivo.
+//
+// O modelo demo (sem projeto no banco) usa a curadoria estática de
+// `demoPhases.ts`, gerada junto com o arquivo por scripts/generate_demo_ifc.py.
+
+// Uma fase com seus elementos — mesma forma da linha de `bim_phases`
+export interface PhaseAssignment {
+  seq: number;
+  name: string;
+  elements: string[]; // GlobalIds IFC
+}
+
+// Linha completa da tabela (usada pelo hook de dados)
+export interface BimPhase extends PhaseAssignment {
+  id: string;
+  project_id: string;
+}
 
 export interface PhaseInfo {
-  num: number;
+  seq: number;
   name: string;
 }
 
-export interface PhaseData {
-  phases: PhaseInfo[];                // ordenadas por num
-  byElement: Map<number, number>;     // expressID → num da fase
+export interface PhaseLookup {
+  phases: PhaseInfo[];               // ordenadas por seq
+  byGlobalId: Map<string, number>;   // GlobalId → seq da fase
 }
 
-export interface PhaseRule {
-  fase: number;
-  nome: string;
-  types?: string[];    // nomes de tipo IFC em maiúsculas (ex.: "IFCWALL")
-  storeys?: string[];  // trechos do nome do pavimento, minúsculas
-}
-
-export interface PhaseElementInput {
-  id: number;
-  typeName: string;                              // tipo IFC em maiúsculas
-  storeyName: string;
-  fromPset: { num: number; name?: string } | null;
-}
-
-// Ordem define prioridade: primeira regra que casar vence.
-export const DEFAULT_PHASE_RULES: PhaseRule[] = [
-  { fase: 1, nome: "Fundação",   types: ["IFCFOOTING", "IFCPILE"], storeys: ["funda"] },
-  { fase: 4, nome: "Cobertura",  types: ["IFCROOF"], storeys: ["cobert", "telhado"] },
-  { fase: 2, nome: "Estrutura",  types: ["IFCCOLUMN", "IFCBEAM", "IFCSLAB", "IFCSTAIR", "IFCSTAIRFLIGHT"] },
-  { fase: 3, nome: "Alvenaria",  types: ["IFCWALL", "IFCWALLSTANDARDCASE", "IFCCURTAINWALL", "IFCPLATE"] },
-  { fase: 5, nome: "Esquadrias", types: ["IFCWINDOW", "IFCDOOR"] },
-];
-
-export function resolvePhases(
-  items: PhaseElementInput[],
-  rules: PhaseRule[] = DEFAULT_PHASE_RULES,
-): PhaseData | null {
-  const byElement = new Map<number, number>();
-  const names = new Map<number, string>();
-
-  for (const it of items) {
-    let num: number | null = null;
-    let name: string | undefined;
-
-    if (it.fromPset) {
-      num = it.fromPset.num;
-      name = it.fromPset.name;
-    } else {
-      const storey = it.storeyName.toLowerCase();
-      for (const r of rules) {
-        const byStorey = r.storeys?.some(s => storey.includes(s));
-        const byType = r.types?.includes(it.typeName);
-        if (byStorey || byType) {
-          num = r.fase;
-          name = r.nome;
-          break;
-        }
-      }
+// Indexa as fases cadastradas para consulta de visibilidade.
+// GlobalId repetido em mais de uma fase: vale a de menor seq.
+export function buildPhaseLookup(assignments: PhaseAssignment[]): PhaseLookup | null {
+  if (assignments.length === 0) return null;
+  const sorted = [...assignments].sort((a, b) => a.seq - b.seq);
+  const byGlobalId = new Map<string, number>();
+  for (const phase of sorted) {
+    for (const gid of phase.elements) {
+      if (!byGlobalId.has(gid)) byGlobalId.set(gid, phase.seq);
     }
-
-    if (num === null) continue; // sem fase → sempre visível
-    byElement.set(it.id, num);
-    if (name && !names.has(num)) names.set(num, name);
   }
+  return {
+    phases: sorted.map(p => ({ seq: p.seq, name: p.name })),
+    byGlobalId,
+  };
+}
 
-  if (byElement.size === 0) return null;
-
-  const nums = [...new Set(byElement.values())].sort((a, b) => a - b);
-  const phases = nums.map(n => ({ num: n, name: names.get(n) ?? `Fase ${n}` }));
-  return { phases, byElement };
+// Elementos do modelo carregado que ainda não têm fase atribuída.
+// Cobre reexportações do Revit: GlobalIds novos/alterados aparecem aqui
+// para o admin revisar.
+export function findOrphans(
+  modelGlobalIds: Iterable<string>,
+  lookup: PhaseLookup | null,
+): string[] {
+  const orphans: string[] = [];
+  for (const gid of modelGlobalIds) {
+    if (!lookup || !lookup.byGlobalId.has(gid)) orphans.push(gid);
+  }
+  return orphans;
 }

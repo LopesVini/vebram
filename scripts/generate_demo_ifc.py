@@ -148,14 +148,19 @@ FASES = {
 }
 
 
+by_fase_gids: dict[int, list[str]] = {}
+
+
 def element(cls, name, solids, storey_idx, fase, material, extra=""):
     rep = w(f"IFCSHAPEREPRESENTATION({CTX},'Body','SweptSolid',({','.join(solids)}))")
     pds = w(f"IFCPRODUCTDEFINITIONSHAPE($,$,({rep}))")
     place = lp(storey_lps[storey_idx], ax3(pt3(0, 0, 0)))
     tail = f",{extra}" if extra else ""
-    ref = w(f"{cls}({guid()},$,'{name}',$,$,{place},{pds},$" + tail + ")")
+    gid = guid()
+    ref = w(f"{cls}({gid},$,'{name}',$,$,{place},{pds},$" + tail + ")")
     by_storey[storey_idx].append(ref)
     by_fase.setdefault(fase, []).append(ref)
+    by_fase_gids.setdefault(fase, []).append(gid.strip("'"))
     by_material.setdefault(material, []).append(ref)
     return ref
 
@@ -391,3 +396,25 @@ END-ISO-10303-21;
 OUT.write_text(header + "\n".join(lines) + "\n" + footer, encoding="utf-8")
 total_elements = sum(len(v) for v in by_storey.values())
 print(f"OK: {OUT} ({OUT.stat().st_size / 1024:.1f} KB, {total_elements} elementos, {len(lines)} entidades)")
+
+# ── Curadoria de fases do demo (por GlobalId) ────────────────────────────────
+# O demo não tem projeto no banco, então a atribuição elemento→fase vive num
+# módulo estático gerado junto com o arquivo (GlobalIds são determinísticos:
+# random.seed fixo). Projetos reais usam a tabela bim_phases.
+PHASES_OUT = OUT.parent.parent.parent / "src" / "lib" / "demoPhases.ts"
+entries = []
+for fase in sorted(by_fase_gids):
+    gids = ", ".join(f'"{g}"' for g in by_fase_gids[fase])
+    entries.append(
+        f'  {{ seq: {fase}, name: "{FASES[fase]}", elements: [{gids}] }},'
+    )
+PHASES_OUT.write_text(
+    "// Gerado por scripts/generate_demo_ifc.py — não editar à mão.\n"
+    "// Curadoria de fases do modelo demo, chaveada por GlobalId IFC.\n"
+    'import type { PhaseAssignment } from "./bimPhases";\n\n'
+    "export const DEMO_PHASES: PhaseAssignment[] = [\n"
+    + "\n".join(entries)
+    + "\n];\n",
+    encoding="utf-8",
+)
+print(f"OK: {PHASES_OUT} ({len(by_fase_gids)} fases)")

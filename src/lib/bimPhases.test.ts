@@ -1,61 +1,47 @@
 import { describe, expect, it } from "vitest";
-import { resolvePhases, type PhaseElementInput } from "./bimPhases";
+import { buildPhaseLookup, findOrphans, type PhaseAssignment } from "./bimPhases";
 
-const el = (over: Partial<PhaseElementInput>): PhaseElementInput => ({
-  id: 1,
-  typeName: "",
-  storeyName: "",
-  fromPset: null,
-  ...over,
+const phases: PhaseAssignment[] = [
+  { seq: 2, name: "Estrutura", elements: ["gid-p1", "gid-v1"] },
+  { seq: 1, name: "Fundação", elements: ["gid-s1", "gid-s2"] },
+  { seq: 3, name: "Alvenaria", elements: ["gid-w1"] },
+];
+
+describe("buildPhaseLookup", () => {
+  it("ordena fases por seq e indexa GlobalId → seq", () => {
+    const lookup = buildPhaseLookup(phases)!;
+    expect(lookup.phases.map(p => p.name)).toEqual(["Fundação", "Estrutura", "Alvenaria"]);
+    expect(lookup.byGlobalId.get("gid-s1")).toBe(1);
+    expect(lookup.byGlobalId.get("gid-v1")).toBe(2);
+    expect(lookup.byGlobalId.get("gid-w1")).toBe(3);
+  });
+
+  it("GlobalId duplicado entre fases fica com a de menor seq", () => {
+    const lookup = buildPhaseLookup([
+      { seq: 3, name: "C", elements: ["dup"] },
+      { seq: 1, name: "A", elements: ["dup"] },
+    ])!;
+    expect(lookup.byGlobalId.get("dup")).toBe(1);
+  });
+
+  it("retorna null sem fases cadastradas", () => {
+    expect(buildPhaseLookup([])).toBeNull();
+  });
 });
 
-describe("resolvePhases", () => {
-  it("usa a fase do pset quando presente", () => {
-    const data = resolvePhases([
-      el({ id: 10, fromPset: { num: 2, name: "Estrutura" } }),
-      el({ id: 11, fromPset: { num: 1, name: "Fundação" } }),
-    ]);
-    expect(data).not.toBeNull();
-    expect(data!.phases).toEqual([
-      { num: 1, name: "Fundação" },
-      { num: 2, name: "Estrutura" },
-    ]);
-    expect(data!.byElement.get(10)).toBe(2);
-    expect(data!.byElement.get(11)).toBe(1);
+describe("findOrphans", () => {
+  it("aponta GlobalIds do modelo sem fase atribuída", () => {
+    const lookup = buildPhaseLookup(phases);
+    const orphans = findOrphans(["gid-s1", "gid-novo", "gid-w1", "gid-reexportado"], lookup);
+    expect(orphans).toEqual(["gid-novo", "gid-reexportado"]);
   });
 
-  it("cai nas regras por tipo quando não há pset", () => {
-    const data = resolvePhases([
-      el({ id: 1, typeName: "IFCFOOTING" }),
-      el({ id: 2, typeName: "IFCCOLUMN" }),
-      el({ id: 3, typeName: "IFCWALL" }),
-      el({ id: 4, typeName: "IFCWINDOW" }),
-    ]);
-    expect(data!.byElement.get(1)).toBe(1);
-    expect(data!.byElement.get(2)).toBe(2);
-    expect(data!.byElement.get(3)).toBe(3);
-    expect(data!.byElement.get(4)).toBe(5);
+  it("sem lookup, todo elemento do modelo é órfão", () => {
+    expect(findOrphans(["a", "b"], null)).toEqual(["a", "b"]);
   });
 
-  it("pavimento de cobertura vence tipo estrutural (laje do telhado)", () => {
-    const data = resolvePhases([
-      el({ id: 1, typeName: "IFCSLAB", storeyName: "Cobertura" }),
-      el({ id: 2, typeName: "IFCSLAB", storeyName: "Térreo" }),
-    ]);
-    expect(data!.byElement.get(1)).toBe(4);
-    expect(data!.byElement.get(2)).toBe(2);
-  });
-
-  it("elemento sem fase fica de fora (sempre visível)", () => {
-    const data = resolvePhases([
-      el({ id: 1, typeName: "IFCFLOWTERMINAL" }),
-      el({ id: 2, typeName: "IFCWALL" }),
-    ]);
-    expect(data!.byElement.has(1)).toBe(false);
-    expect(data!.byElement.get(2)).toBe(3);
-  });
-
-  it("retorna null quando nenhum elemento tem fase", () => {
-    expect(resolvePhases([el({ id: 1, typeName: "IFCFLOWTERMINAL" })])).toBeNull();
+  it("modelo totalmente curado não tem órfãos", () => {
+    const lookup = buildPhaseLookup(phases);
+    expect(findOrphans(["gid-s1", "gid-v1"], lookup)).toEqual([]);
   });
 });

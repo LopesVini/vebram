@@ -1,14 +1,20 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import {
   Box, Layers, Loader2, Maximize2, Search, ChevronRight, Eye, AlertCircle,
-  Expand, Shrink, Camera, CheckCircle2, Circle, Hammer,
+  Expand, Shrink, Camera, CheckCircle2, Circle, Hammer, AlertTriangle, Plus, Trash2,
 } from "lucide-react";
 import * as THREE from "three";
 import { OrbitControls } from "three-stdlib";
 import { IfcAPI, FlatMesh } from "web-ifc";
+import { toast } from "sonner";
 import { useClientProject } from "@/hooks/data/useClientProject";
+import { useBimPhases } from "@/hooks/data/useBimPhases";
 import BimBottomSheet from "@/components/portal/BimBottomSheet";
-import { resolvePhases, type PhaseData, type PhaseElementInput } from "@/lib/bimPhases";
+import {
+  buildPhaseLookup, findOrphans,
+  type BimPhase, type PhaseAssignment, type PhaseLookup,
+} from "@/lib/bimPhases";
+import { DEMO_PHASES } from "@/lib/demoPhases";
 
 const DEMO_IFC_URL = "/models/demo.ifc";
 
@@ -501,56 +507,31 @@ function getElementProps(
   return { name, typeName, globalId, objectType, storey: findStoreyName(tree, id), material, psets };
 }
 
-// Lê a fase do elemento em qualquer pset com propriedade "Fase"/"Phase"
-// (inteiro) e rótulo opcional "Etapa"/"Stage"
-function readPhaseFromPsets(
-  api: IfcAPI,
-  modelID: number,
-  id: number,
-  defs: DefinitionMaps,
-): { num: number; name?: string } | null {
-  for (const defId of defs.psets.get(id) ?? []) {
-    try {
-      const def = api.GetLine(modelID, defId, true);
-      let num: number | null = null;
-      let name: string | undefined;
-      for (const p of def?.HasProperties ?? []) {
-        const pName = String(p?.Name?.value ?? "").toLowerCase();
-        if (pName === "fase" || pName === "phase") {
-          const v = Number(p?.NominalValue?.value);
-          if (!Number.isNaN(v)) num = v;
-        } else if (pName === "etapa" || pName === "stage") {
-          name = String(p?.NominalValue?.value ?? "") || undefined;
-        }
-      }
-      if (num !== null) return { num, name };
-    } catch { /* pset ilegível, segue */ }
-  }
-  return null;
+// Mapas expressID ↔ GlobalId dos elementos com geometria. O GlobalId é a
+// chave persistida das fases (estável entre reexportações); o expressID só
+// vale para o modelo aberto em memória e nunca é gravado.
+interface GidMaps {
+  byExpress: Map<number, string>;
+  byGlobalId: Map<string, number>;
 }
 
-// Classifica todos os elementos com geometria em fases de execução
-function buildPhaseData(
+function buildGlobalIdMaps(
   api: IfcAPI,
   modelID: number,
-  defs: DefinitionMaps,
-  tree: SpatialNode | null,
   meshMap: Map<number, THREE.Mesh[]>,
-): PhaseData | null {
-  const items: PhaseElementInput[] = [];
+): GidMaps {
+  const byExpress = new Map<number, string>();
+  const byGlobalId = new Map<string, number>();
   meshMap.forEach((_meshes, id) => {
-    let typeName = "";
     try {
-      typeName = (api.GetNameFromTypeCode(api.GetLineType(modelID, id)) || "").toUpperCase();
-    } catch { /* sem tipo */ }
-    items.push({
-      id,
-      typeName,
-      storeyName: findStoreyName(tree, id) ?? "",
-      fromPset: readPhaseFromPsets(api, modelID, id, defs),
-    });
+      const gid = api.GetLine(modelID, id)?.GlobalId?.value;
+      if (typeof gid === "string" && gid) {
+        byExpress.set(id, gid);
+        byGlobalId.set(gid, id);
+      }
+    } catch { /* elemento sem linha legível */ }
   });
-  return resolvePhases(items);
+  return { byExpress, byGlobalId };
 }
 
 // Constrói a árvore espacial real (Site → Building → Storey → elementos)
@@ -696,7 +677,7 @@ function PanelContent({
   ancestorIds: Set<number>;
   selectedProps: ElementProps | null;
   clientMode: boolean;
-  phaseData: PhaseData | null;
+  phaseData: PhaseLookup | null;
   phaseIdx: number;
   onPhaseSelect: (idx: number) => void;
   progressPct: number;
@@ -706,6 +687,7 @@ function PanelContent({
     return (
       <>
         {/* Progresso no lugar de honra */}
+        {phaseData && (
         <div className="mb-4 p-3 rounded-xl bg-primary/10 border border-primary/20 shrink-0">
           <p className="text-[10px] font-bold text-zinc-500 mb-1 tracking-widest">PROGRESSO DA OBRA</p>
           <div className="flex items-end gap-2">
@@ -719,6 +701,7 @@ function PanelContent({
             />
           </div>
         </div>
+        )}
 
         <div className="flex-1 overflow-y-auto pr-1">
           <p className="text-[10px] font-bold text-zinc-500 mb-2 tracking-widest">ETAPAS DA OBRA</p>
@@ -730,7 +713,7 @@ function PanelContent({
             const StatusIcon = status === "done" ? CheckCircle2 : status === "current" ? Hammer : Circle;
             return (
               <button
-                key={p.num}
+                key={p.seq}
                 onClick={() => onPhaseSelect(i)}
                 className={`w-full flex items-center gap-2.5 p-2 rounded-lg text-left transition-colors mb-1 ${
                   status === "current"
@@ -878,6 +861,125 @@ function ModeToggle({
   );
 }
 
+// Painel de curadoria de fases (admin): seleção múltipla no 3D → atribuir
+// GlobalIds à fase escolhida; sinaliza elementos órfãos (sem fase).
+function CurationPanel({
+  active, onToggle, selCount, phases, onAssign, onDeletePhase,
+  newPhaseName, setNewPhaseName, onCreatePhase,
+  orphanCount, showOrphans, onToggleOrphans, onSelectOrphans, onClearSel,
+  disabled,
+}: {
+  active: boolean;
+  onToggle: () => void;
+  selCount: number;
+  phases: BimPhase[];
+  onAssign: (phaseId: string) => void;
+  onDeletePhase: (id: string) => void;
+  newPhaseName: string;
+  setNewPhaseName: (v: string) => void;
+  onCreatePhase: () => void;
+  orphanCount: number;
+  showOrphans: boolean;
+  onToggleOrphans: () => void;
+  onSelectOrphans: () => void;
+  onClearSel: () => void;
+  disabled: boolean;
+}) {
+  return (
+    <div className="mb-4 p-3 rounded-xl border border-amber-300/50 dark:border-amber-500/20 bg-amber-50/60 dark:bg-amber-500/5 shrink-0">
+      <div className="flex items-center justify-between mb-1">
+        <p className="text-[10px] font-bold text-zinc-500 tracking-widest">CURADORIA DE FASES</p>
+        <button
+          onClick={onToggle}
+          disabled={disabled}
+          className={`px-2 py-1 text-[9px] font-bold rounded transition-colors disabled:opacity-40 ${
+            active ? "bg-amber-500 text-white" : "bg-zinc-100 dark:bg-white/10 text-zinc-500 hover:text-navy dark:hover:text-white"
+          }`}
+        >
+          {active ? "ATIVA" : "ATIVAR"}
+        </button>
+      </div>
+
+      {disabled && (
+        <p className="text-[10px] text-zinc-500">
+          Disponível apenas para modelos vinculados a um projeto.
+        </p>
+      )}
+
+      {!disabled && orphanCount > 0 && (
+        <div className="flex items-center gap-1.5 mb-2 text-[10px] text-amber-600 dark:text-amber-400 font-bold">
+          <AlertTriangle size={12} className="shrink-0" />
+          <span className="flex-1">{orphanCount} elemento(s) sem fase</span>
+          <button onClick={onToggleOrphans} className={`px-1.5 py-0.5 rounded ${showOrphans ? "bg-amber-500 text-white" : "bg-zinc-100 dark:bg-white/10 text-zinc-500"}`}>
+            Destacar
+          </button>
+          {active && (
+            <button onClick={onSelectOrphans} className="px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-white/10 text-zinc-500 hover:text-navy dark:hover:text-white">
+              Selecionar
+            </button>
+          )}
+        </div>
+      )}
+
+      {!disabled && active && (
+        <>
+          <div className="flex items-center gap-2 mb-2 text-[10px]">
+            <span className="flex-1 text-zinc-500">
+              <strong className="text-navy dark:text-white">{selCount}</strong> selecionado(s) — clique nos elementos no 3D
+            </span>
+            {selCount > 0 && (
+              <button onClick={onClearSel} className="px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-white/10 text-zinc-500 hover:text-navy dark:hover:text-white font-bold">
+                Limpar
+              </button>
+            )}
+          </div>
+
+          {phases.map(p => (
+            <div key={p.id} className="flex items-center gap-1.5 mb-1 text-[10px]">
+              <span className="flex-1 truncate text-navy dark:text-white font-bold">
+                {p.seq}. {p.name}
+                <span className="ml-1 font-normal text-zinc-400">({p.elements.length})</span>
+              </span>
+              <button
+                onClick={() => onAssign(p.id)}
+                disabled={selCount === 0}
+                className="px-2 py-0.5 rounded bg-primary/15 text-primary font-bold disabled:opacity-40 hover:bg-primary/25 transition-colors"
+              >
+                Atribuir
+              </button>
+              <button
+                onClick={() => onDeletePhase(p.id)}
+                className="p-1 rounded text-zinc-400 hover:text-red-500 transition-colors"
+                aria-label={`Excluir fase ${p.name}`}
+              >
+                <Trash2 size={11} />
+              </button>
+            </div>
+          ))}
+
+          <div className="flex gap-1.5 mt-2">
+            <input
+              type="text"
+              value={newPhaseName}
+              onChange={e => setNewPhaseName(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") onCreatePhase(); }}
+              placeholder="Nova fase..."
+              className="flex-1 min-w-0 bg-white dark:bg-black/20 border border-zinc-200 dark:border-white/10 rounded px-2 py-1 text-[10px] text-navy dark:text-white focus:outline-none focus:border-primary"
+            />
+            <button
+              onClick={onCreatePhase}
+              disabled={!newPhaseName.trim()}
+              className="px-2 py-1 rounded bg-primary text-white disabled:opacity-40 flex items-center gap-1 text-[10px] font-bold"
+            >
+              <Plus size={11} /> Criar
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // Botão compacto das ferramentas de visibilidade
 function ToolBtn({
   children, onClick, active = false,
@@ -896,13 +998,31 @@ function ToolBtn({
   );
 }
 
-export default function BimViewer() {
+// Forma mínima de projeto que o workspace precisa (portal e HQ)
+export interface BimWorkspaceProject {
+  id: string | null;
+  name: string;
+  ifc_url?: string | null;
+}
+
+// Viewer BIM completo, reutilizado pela página do portal (cliente) e pela
+// aba BIM do HQ (admin, com curadoria de fases)
+export function BimWorkspace({
+  project,
+  projectLoading = false,
+  adminMode = false,
+  variant = "portal",
+}: {
+  project: BimWorkspaceProject | null;
+  projectLoading?: boolean;
+  adminMode?: boolean;
+  variant?: "portal" | "hq";
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef    = useRef<HTMLDivElement>(null);
   const {
     modelGroup, fitToModel, fitToBox, clearModel, pick, setView, setClipping, screenshot,
   } = useThreeScene(containerRef);
-  const { project, loading: projectLoading } = useClientProject();
 
   const [loading, setLoading]   = useState(false);
   const [progress, setProgress] = useState("");
@@ -921,11 +1041,22 @@ export default function BimViewer() {
     { mode: "all", ids: new Set() },
   );
   const [clip, setClip] = useState<{ axis: "x" | "y" | "z" | null; t: number }>({ axis: null, t: 0.5 });
-  const [phaseData, setPhaseData] = useState<PhaseData | null>(null);
-  const [phaseIdx, setPhaseIdx]   = useState(0); // índice em phaseData.phases
+  const [phaseIdx, setPhaseIdx] = useState(0); // índice em phaseLookup.phases
+  const [gidMaps, setGidMaps]   = useState<GidMaps | null>(null);
   const [clientMode, setClientMode] = useState<boolean>(
-    () => localStorage.getItem(BIM_MODE_KEY) !== "tecnico",
+    () => !adminMode && localStorage.getItem(BIM_MODE_KEY) !== "tecnico",
   );
+
+  // Curadoria (admin): seleção múltipla por expressID + destaque de órfãos
+  const [curation, setCuration]       = useState(false);
+  const [curationSel, setCurationSel] = useState<Set<number>>(new Set());
+  const [showOrphans, setShowOrphans] = useState(false);
+  const [newPhaseName, setNewPhaseName] = useState("");
+
+  // Fonte de verdade das fases: tabela bim_phases (curadoria manual por
+  // GlobalId). O demo, sem projeto no banco, usa a curadoria estática gerada.
+  const { phases: dbPhases, createPhase, deletePhase, assignElements } =
+    useBimPhases(project?.id ?? null);
 
   const handleModeChange = useCallback((client: boolean) => {
     setClientMode(client);
@@ -943,6 +1074,21 @@ export default function BimViewer() {
     if (h) { try { h.api.CloseModel(h.modelID); } catch { /* já fechado */ } }
     ifcRef.current = null;
   }, []);
+
+  const phaseAssignments: PhaseAssignment[] = isProjectModel ? dbPhases : DEMO_PHASES;
+  const phaseLookup = useMemo(() => buildPhaseLookup(phaseAssignments), [phaseAssignments]);
+
+  // Nova curadoria ou novo modelo: timeline volta para a última fase
+  useEffect(() => {
+    setPhaseIdx(phaseLookup ? phaseLookup.phases.length - 1 : 0);
+  }, [phaseLookup]);
+
+  // Órfãos: GlobalIds presentes no modelo carregado sem fase atribuída
+  // (cobre elementos novos/alterados após reexportação do IFC)
+  const orphanGids = useMemo(() => {
+    if (!gidMaps) return [];
+    return findOrphans(gidMaps.byExpress.values(), phaseLookup);
+  }, [gidMaps, phaseLookup]);
 
   const query = search.trim().toLowerCase();
 
@@ -971,6 +1117,17 @@ export default function BimViewer() {
         mat.emissiveIntensity = 0.45;
       }));
     }
+    if (showOrphans && gidMaps) {
+      orphanGids.forEach(gid => {
+        const id = gidMaps.byGlobalId.get(gid);
+        if (id === undefined) return;
+        meshMapRef.current.get(id)?.forEach(m => {
+          const mat = m.material as THREE.MeshStandardMaterial;
+          mat.emissive.setHex(0xf59e0b);
+          mat.emissiveIntensity = 0.6;
+        });
+      });
+    }
     if (selectedId !== null) {
       const node = tree ? findNode(tree, selectedId) : null;
       const ids = node ? collectIds(node) : [selectedId];
@@ -980,7 +1137,12 @@ export default function BimViewer() {
         mat.emissiveIntensity = 0.85;
       }));
     }
-  }, [query, selectedId, tree, info]);
+    curationSel.forEach(id => meshMapRef.current.get(id)?.forEach(m => {
+      const mat = m.material as THREE.MeshStandardMaterial;
+      mat.emissive.setHex(0x22c55e);
+      mat.emissiveIntensity = 0.9;
+    }));
+  }, [query, selectedId, tree, info, curationSel, showOrphans, orphanGids, gidMaps]);
 
   // Propriedades IFC do elemento selecionado (consulta o modelo aberto)
   useEffect(() => {
@@ -993,14 +1155,15 @@ export default function BimViewer() {
     }
   }, [selectedId, tree]);
 
-  // Visibilidade: linha do tempo + ocultos + isolar/fantasma
+  // Visibilidade: linha do tempo (por GlobalId) + ocultos + isolar/fantasma
   useEffect(() => {
-    const currentPhase = phaseData
-      ? phaseData.phases[Math.min(phaseIdx, phaseData.phases.length - 1)]?.num ?? Infinity
+    const currentSeq = phaseLookup
+      ? phaseLookup.phases[Math.min(phaseIdx, phaseLookup.phases.length - 1)]?.seq ?? Infinity
       : Infinity;
     meshMapRef.current.forEach((meshes, id) => {
-      const elementPhase = phaseData?.byElement.get(id);
-      const phaseHidden = elementPhase !== undefined && elementPhase > currentPhase;
+      const gid = gidMaps?.byExpress.get(id);
+      const seq = gid !== undefined ? phaseLookup?.byGlobalId.get(gid) : undefined;
+      const phaseHidden = seq !== undefined && seq > currentSeq;
       meshes.forEach(m => {
         const mat = m.material as THREE.MeshStandardMaterial;
         const hidden = phaseHidden
@@ -1018,23 +1181,21 @@ export default function BimViewer() {
         }
       });
     });
-  }, [hiddenIds, visMode, info, phaseData, phaseIdx]);
+  }, [hiddenIds, visMode, info, phaseLookup, phaseIdx, gidMaps]);
 
   // Nome da etapa do elemento selecionado (rótulo amigável do modo cliente)
   const selectedPhaseName = useMemo(() => {
-    if (!phaseData || selectedId === null) return undefined;
-    const num = phaseData.byElement.get(selectedId);
-    return phaseData.phases.find(p => p.num === num)?.name;
-  }, [phaseData, selectedId]);
+    if (!phaseLookup || !gidMaps || selectedId === null) return undefined;
+    const gid = gidMaps.byExpress.get(selectedId);
+    const seq = gid ? phaseLookup.byGlobalId.get(gid) : undefined;
+    return phaseLookup.phases.find(p => p.seq === seq)?.name;
+  }, [phaseLookup, gidMaps, selectedId]);
 
-  // % da obra: elementos com fase liberada / total de elementos com fase
+  // % da obra: fases liberadas / total de fases cadastradas
   const progressPct = useMemo(() => {
-    if (!phaseData) return 100;
-    const cur = phaseData.phases[Math.min(phaseIdx, phaseData.phases.length - 1)]?.num ?? Infinity;
-    let done = 0;
-    phaseData.byElement.forEach(n => { if (n <= cur) done++; });
-    return Math.round((done / phaseData.byElement.size) * 100);
-  }, [phaseData, phaseIdx]);
+    if (!phaseLookup || phaseLookup.phases.length === 0) return 100;
+    return Math.round(((phaseIdx + 1) / phaseLookup.phases.length) * 100);
+  }, [phaseLookup, phaseIdx]);
 
   // Plano de corte
   useEffect(() => {
@@ -1069,6 +1230,59 @@ export default function BimViewer() {
     setHiddenIds(new Set());
     setVisMode({ mode: "all", ids: new Set() });
   }, []);
+
+  // ── Curadoria de fases (admin) ────────────────────────────────────────────
+  const curationGids = useMemo(() => {
+    if (!gidMaps) return [] as string[];
+    return [...curationSel]
+      .map(id => gidMaps.byExpress.get(id))
+      .filter((g): g is string => !!g);
+  }, [curationSel, gidMaps]);
+
+  const toggleCuration = useCallback(() => {
+    setCuration(v => !v);
+    setCurationSel(new Set());
+    setSelectedId(null);
+  }, []);
+
+  const handleAssign = useCallback(async (phaseId: string) => {
+    if (!curationGids.length) return;
+    const { error } = await assignElements(phaseId, curationGids);
+    if (error) {
+      toast.error("Falha ao salvar atribuição: " + error);
+      return;
+    }
+    toast.success(`${curationGids.length} elemento(s) atribuído(s) à fase.`);
+    setCurationSel(new Set());
+  }, [curationGids, assignElements]);
+
+  const handleCreatePhase = useCallback(async () => {
+    const name = newPhaseName.trim();
+    if (!name) return;
+    const phase = await createPhase(name);
+    if (!phase) {
+      toast.error("Falha ao criar fase.");
+      return;
+    }
+    setNewPhaseName("");
+    toast.success(`Fase "${name}" criada.`);
+  }, [newPhaseName, createPhase]);
+
+  const handleDeletePhase = useCallback(async (id: string) => {
+    const phase = dbPhases.find(p => p.id === id);
+    if (!phase) return;
+    if (!window.confirm(`Excluir a fase "${phase.name}"? Os ${phase.elements.length} elementos dela voltam a ficar sem fase.`)) return;
+    const { error } = await deletePhase(id);
+    if (error) toast.error("Falha ao excluir fase: " + error);
+  }, [dbPhases, deletePhase]);
+
+  const selectOrphans = useCallback(() => {
+    if (!gidMaps) return;
+    const ids = orphanGids
+      .map(g => gidMaps.byGlobalId.get(g))
+      .filter((i): i is number => i !== undefined);
+    setCurationSel(new Set(ids));
+  }, [gidMaps, orphanGids]);
 
   const handleScreenshot = useCallback(() => {
     const url = screenshot();
@@ -1110,9 +1324,20 @@ export default function BimViewer() {
     pointerDownRef.current = null;
     if (!d || Math.hypot(e.clientX - d.x, e.clientY - d.y) > 6) return;
     const id = pick(e.clientX, e.clientY);
+    // Curadoria ativa: cliques acumulam/removem da seleção múltipla
+    if (adminMode && curation) {
+      if (id === null) return;
+      setCurationSel(prev => {
+        const next = new Set(prev);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        return next;
+      });
+      return;
+    }
     if (id === null) setSelectedId(null);
     else setSelectedId(prev => (prev === id ? null : id));
-  }, [pick]);
+  }, [pick, adminMode, curation]);
 
   // Fullscreen nativo com fallback CSS (iOS Safari não suporta requestFullscreen em div)
   useEffect(() => {
@@ -1151,6 +1376,9 @@ export default function BimViewer() {
     setHiddenIds(new Set());
     setVisMode({ mode: "all", ids: new Set() });
     setClip({ axis: null, t: 0.5 });
+    setCurationSel(new Set());
+    setShowOrphans(false);
+    setGidMaps(null);
     clearModel();
     meshMapRef.current.clear();
     const prev = ifcRef.current;
@@ -1163,9 +1391,7 @@ export default function BimViewer() {
       const result = await loadIfcIntoGroup(data, modelGroup, meshMapRef.current, setProgress);
       const defs = buildDefinitionMaps(result.api, result.modelID);
       ifcRef.current = { api: result.api, modelID: result.modelID, defs };
-      const phases = buildPhaseData(result.api, result.modelID, defs, result.tree, meshMapRef.current);
-      setPhaseData(phases);
-      setPhaseIdx(phases ? phases.phases.length - 1 : 0);
+      setGidMaps(buildGlobalIdMaps(result.api, result.modelID, meshMapRef.current));
       setInfo({ ...result.info, name: sourceName });
       setTree(result.tree);
       setIsProjectModel(fromProject);
@@ -1219,9 +1445,13 @@ export default function BimViewer() {
   }, [projectLoading, project?.ifc_url, project?.name, loadFromBuffer, loadDemo]);
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-3.5rem-env(safe-area-inset-bottom))] -mx-3 -mt-[4.5rem] -mb-24 pt-14 lg:m-0 lg:pt-0 lg:h-[calc(100vh-6rem)] w-auto lg:w-full font-mono text-zinc-300 relative gap-0 lg:gap-6">
+    <div className={variant === "portal"
+      ? "flex flex-col h-[calc(100dvh-3.5rem-env(safe-area-inset-bottom))] -mx-3 -mt-[4.5rem] -mb-24 pt-14 lg:m-0 lg:pt-0 lg:h-[calc(100vh-6rem)] w-auto lg:w-full font-mono text-zinc-300 relative gap-0 lg:gap-6"
+      : "flex flex-col h-[75vh] w-full font-mono text-zinc-300 relative gap-4"
+    }>
 
       {/* Header */}
+      {variant === "portal" && (
       <div className="hidden lg:flex justify-between items-end border-b border-zinc-200 dark:border-white/5 pb-4 mb-2">
         <div className="flex items-center gap-4">
           <div className="bg-accent/20 text-accent px-3 py-1 rounded-[0.25rem] font-bold text-sm">[ IFC ]</div>
@@ -1239,18 +1469,38 @@ export default function BimViewer() {
           </button>
         </div>
       </div>
+      )}
 
       <div className="flex flex-1 gap-0 lg:gap-6 min-h-0">
 
         {/* Sidebar / Tree View */}
         <div className="hidden lg:flex w-80 bg-white dark:bg-navy-light/60 border border-zinc-200 dark:border-white/15 rounded-2xl p-4 flex-col shadow-lg overflow-hidden">
+          {adminMode && (
+            <CurationPanel
+              active={curation}
+              onToggle={toggleCuration}
+              selCount={curationSel.size}
+              phases={dbPhases}
+              onAssign={handleAssign}
+              onDeletePhase={handleDeletePhase}
+              newPhaseName={newPhaseName}
+              setNewPhaseName={setNewPhaseName}
+              onCreatePhase={handleCreatePhase}
+              orphanCount={orphanGids.length}
+              showOrphans={showOrphans}
+              onToggleOrphans={() => setShowOrphans(v => !v)}
+              onSelectOrphans={selectOrphans}
+              onClearSel={() => setCurationSel(new Set())}
+              disabled={!project?.id || !isProjectModel}
+            />
+          )}
           <PanelContent
             search={search} setSearch={setSearch}
             tree={displayTree} hasModel={!!tree} info={info} loading={loading}
             selectedId={selectedId} onSelect={handleSelectNode}
             forceOpen={!!query} ancestorIds={ancestorIds}
             selectedProps={selectedProps}
-            clientMode={clientMode} phaseData={phaseData} phaseIdx={phaseIdx}
+            clientMode={clientMode} phaseData={phaseLookup} phaseIdx={phaseIdx}
             onPhaseSelect={setPhaseIdx} progressPct={progressPct}
             selectedPhaseName={selectedPhaseName}
           />
@@ -1286,21 +1536,19 @@ export default function BimViewer() {
           {/* Overlay info */}
           <div className="absolute top-4 left-4 right-4 flex justify-between items-start z-10 pointer-events-none">
             <div className="flex flex-col gap-2 items-start">
-              {/* Toggle de modo (mobile; desktop fica no header) */}
-              <div className="lg:hidden pointer-events-auto">
+              {/* Toggle de modo (portal: só mobile, desktop fica no header; HQ: sempre) */}
+              <div className={variant === "hq" ? "pointer-events-auto" : "lg:hidden pointer-events-auto"}>
                 <ModeToggle clientMode={clientMode} onChange={handleModeChange} />
               </div>
               {clientMode ? (
-                info && (
+                info && phaseLookup && (
                   <div className="bg-white/80 dark:bg-black/60 backdrop-blur-md border border-zinc-200 dark:border-white/10 p-3 rounded-lg hidden lg:block pointer-events-auto shadow-lg">
                     <p className="text-[10px] text-zinc-500">PROGRESSO DA OBRA</p>
                     <p className="text-sm font-black text-primary">
                       {progressPct}%
-                      {phaseData && (
-                        <span className="ml-2 text-xs font-bold text-navy dark:text-white">
-                          {phaseData.phases[phaseIdx]?.name}
-                        </span>
-                      )}
+                      <span className="ml-2 text-xs font-bold text-navy dark:text-white">
+                        {phaseLookup.phases[phaseIdx]?.name}
+                      </span>
                     </p>
                   </div>
                 )
@@ -1428,15 +1676,15 @@ export default function BimViewer() {
       </div>
 
       {/* Linha do tempo de marcos */}
-      {phaseData && phaseData.phases.length > 1 && (
-        <div className="flex items-center gap-3 lg:gap-5 bg-white dark:bg-navy-light/60 border-t lg:border border-zinc-200 dark:border-white/15 rounded-none lg:rounded-2xl px-4 lg:px-6 py-2.5 lg:py-3 shadow-lg shrink-0 mb-10 lg:mb-0">
+      {phaseLookup && phaseLookup.phases.length > 1 && (
+        <div className={`flex items-center gap-3 lg:gap-5 bg-white dark:bg-navy-light/60 border-t lg:border border-zinc-200 dark:border-white/15 rounded-none lg:rounded-2xl px-4 lg:px-6 py-2.5 lg:py-3 shadow-lg shrink-0 ${variant === "portal" ? "mb-10 lg:mb-0" : ""}`}>
           <span className="hidden sm:block text-[9px] font-bold text-zinc-500 tracking-widest shrink-0">
             LINHA DO TEMPO
           </span>
           <input
             type="range"
             min={0}
-            max={phaseData.phases.length - 1}
+            max={phaseLookup.phases.length - 1}
             step={1}
             value={phaseIdx}
             onChange={e => setPhaseIdx(Number(e.target.value))}
@@ -1444,9 +1692,9 @@ export default function BimViewer() {
             aria-label="Fase da obra"
           />
           <div className="hidden lg:flex gap-1 shrink-0">
-            {phaseData.phases.map((p, i) => (
+            {phaseLookup.phases.map((p, i) => (
               <button
-                key={p.num}
+                key={p.seq}
                 onClick={() => setPhaseIdx(i)}
                 className={`px-2 py-1 text-[9px] font-bold rounded transition-colors ${
                   i <= phaseIdx
@@ -1460,25 +1708,40 @@ export default function BimViewer() {
           </div>
           <div className="shrink-0 text-right w-24 lg:w-28">
             <p className="text-xs font-bold text-navy dark:text-white truncate">
-              {phaseData.phases[phaseIdx]?.name}
+              {phaseLookup.phases[phaseIdx]?.name}
             </p>
             <p className="text-[10px] text-primary font-bold">{progressPct}% da obra</p>
           </div>
         </div>
       )}
 
-      <BimBottomSheet>
-        <PanelContent
-          search={search} setSearch={setSearch}
-          tree={displayTree} hasModel={!!tree} info={info} loading={loading}
-          selectedId={selectedId} onSelect={handleSelectNode}
-          forceOpen={!!query} ancestorIds={ancestorIds}
-          selectedProps={selectedProps}
-          clientMode={clientMode} phaseData={phaseData} phaseIdx={phaseIdx}
-          onPhaseSelect={setPhaseIdx} progressPct={progressPct}
-          selectedPhaseName={selectedPhaseName}
-        />
-      </BimBottomSheet>
+      {variant === "portal" && (
+        <BimBottomSheet>
+          <PanelContent
+            search={search} setSearch={setSearch}
+            tree={displayTree} hasModel={!!tree} info={info} loading={loading}
+            selectedId={selectedId} onSelect={handleSelectNode}
+            forceOpen={!!query} ancestorIds={ancestorIds}
+            selectedProps={selectedProps}
+            clientMode={clientMode} phaseData={phaseLookup} phaseIdx={phaseIdx}
+            onPhaseSelect={setPhaseIdx} progressPct={progressPct}
+            selectedPhaseName={selectedPhaseName}
+          />
+        </BimBottomSheet>
+      )}
     </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Página do portal: o cliente vê o modelo do próprio projeto (ou o demo)
+// ─────────────────────────────────────────────────────────────────────────────
+export default function BimViewer() {
+  const { project, loading } = useClientProject();
+  return (
+    <BimWorkspace
+      project={project ? { id: project.id, name: project.name, ifc_url: project.ifc_url } : null}
+      projectLoading={loading}
+    />
   );
 }
