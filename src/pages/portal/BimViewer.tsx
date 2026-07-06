@@ -8,6 +8,7 @@ import { OrbitControls } from "three-stdlib";
 import { IfcAPI, FlatMesh } from "web-ifc";
 import { useClientProject } from "@/hooks/data/useClientProject";
 import BimBottomSheet from "@/components/portal/BimBottomSheet";
+import { resolvePhases, type PhaseData, type PhaseElementInput } from "@/lib/bimPhases";
 
 const DEMO_IFC_URL = "/models/demo.ifc";
 
@@ -334,8 +335,7 @@ async function loadIfcIntoGroup(
     }
   });
 
-  // IFC tem o eixo Y=up, mas comum em IFC é Z=up. Rotacionamos o grupo:
-  group.rotation.x = -Math.PI / 2;
+  // web-ifc já entrega as transformações com Y para cima — sem rotação extra.
 
   // Bounding box
   const box  = new THREE.Box3().setFromObject(group);
@@ -499,6 +499,58 @@ function getElementProps(
   }
 
   return { name, typeName, globalId, objectType, storey: findStoreyName(tree, id), material, psets };
+}
+
+// Lê a fase do elemento em qualquer pset com propriedade "Fase"/"Phase"
+// (inteiro) e rótulo opcional "Etapa"/"Stage"
+function readPhaseFromPsets(
+  api: IfcAPI,
+  modelID: number,
+  id: number,
+  defs: DefinitionMaps,
+): { num: number; name?: string } | null {
+  for (const defId of defs.psets.get(id) ?? []) {
+    try {
+      const def = api.GetLine(modelID, defId, true);
+      let num: number | null = null;
+      let name: string | undefined;
+      for (const p of def?.HasProperties ?? []) {
+        const pName = String(p?.Name?.value ?? "").toLowerCase();
+        if (pName === "fase" || pName === "phase") {
+          const v = Number(p?.NominalValue?.value);
+          if (!Number.isNaN(v)) num = v;
+        } else if (pName === "etapa" || pName === "stage") {
+          name = String(p?.NominalValue?.value ?? "") || undefined;
+        }
+      }
+      if (num !== null) return { num, name };
+    } catch { /* pset ilegível, segue */ }
+  }
+  return null;
+}
+
+// Classifica todos os elementos com geometria em fases de execução
+function buildPhaseData(
+  api: IfcAPI,
+  modelID: number,
+  defs: DefinitionMaps,
+  tree: SpatialNode | null,
+  meshMap: Map<number, THREE.Mesh[]>,
+): PhaseData | null {
+  const items: PhaseElementInput[] = [];
+  meshMap.forEach((_meshes, id) => {
+    let typeName = "";
+    try {
+      typeName = (api.GetNameFromTypeCode(api.GetLineType(modelID, id)) || "").toUpperCase();
+    } catch { /* sem tipo */ }
+    items.push({
+      id,
+      typeName,
+      storeyName: findStoreyName(tree, id) ?? "",
+      fromPset: readPhaseFromPsets(api, modelID, id, defs),
+    });
+  });
+  return resolvePhases(items);
 }
 
 // Constrói a árvore espacial real (Site → Building → Storey → elementos)
@@ -760,6 +812,8 @@ export default function BimViewer() {
     { mode: "all", ids: new Set() },
   );
   const [clip, setClip] = useState<{ axis: "x" | "y" | "z" | null; t: number }>({ axis: null, t: 0.5 });
+  const [phaseData, setPhaseData] = useState<PhaseData | null>(null);
+  const [phaseIdx, setPhaseIdx]   = useState(0); // índice em phaseData.phases
 
   const meshMapRef = useRef<Map<number, THREE.Mesh[]>>(new Map());
   const pointerDownRef = useRef<{ x: number; y: number } | null>(null);
@@ -821,12 +875,19 @@ export default function BimViewer() {
     }
   }, [selectedId, tree]);
 
-  // Visibilidade: ocultos + isolar/fantasma
+  // Visibilidade: linha do tempo + ocultos + isolar/fantasma
   useEffect(() => {
+    const currentPhase = phaseData
+      ? phaseData.phases[Math.min(phaseIdx, phaseData.phases.length - 1)]?.num ?? Infinity
+      : Infinity;
     meshMapRef.current.forEach((meshes, id) => {
+      const elementPhase = phaseData?.byElement.get(id);
+      const phaseHidden = elementPhase !== undefined && elementPhase > currentPhase;
       meshes.forEach(m => {
         const mat = m.material as THREE.MeshStandardMaterial;
-        const hidden = hiddenIds.has(id) || (visMode.mode === "isolate" && !visMode.ids.has(id));
+        const hidden = phaseHidden
+          || hiddenIds.has(id)
+          || (visMode.mode === "isolate" && !visMode.ids.has(id));
         m.visible = !hidden;
         if (visMode.mode === "ghost" && !visMode.ids.has(id)) {
           mat.transparent = true;
@@ -839,7 +900,16 @@ export default function BimViewer() {
         }
       });
     });
-  }, [hiddenIds, visMode, info]);
+  }, [hiddenIds, visMode, info, phaseData, phaseIdx]);
+
+  // % da obra: elementos com fase liberada / total de elementos com fase
+  const progressPct = useMemo(() => {
+    if (!phaseData) return 100;
+    const cur = phaseData.phases[Math.min(phaseIdx, phaseData.phases.length - 1)]?.num ?? Infinity;
+    let done = 0;
+    phaseData.byElement.forEach(n => { if (n <= cur) done++; });
+    return Math.round((done / phaseData.byElement.size) * 100);
+  }, [phaseData, phaseIdx]);
 
   // Plano de corte
   useEffect(() => {
@@ -966,11 +1036,11 @@ export default function BimViewer() {
     try {
       const data = new Uint8Array(buffer);
       const result = await loadIfcIntoGroup(data, modelGroup, meshMapRef.current, setProgress);
-      ifcRef.current = {
-        api: result.api,
-        modelID: result.modelID,
-        defs: buildDefinitionMaps(result.api, result.modelID),
-      };
+      const defs = buildDefinitionMaps(result.api, result.modelID);
+      ifcRef.current = { api: result.api, modelID: result.modelID, defs };
+      const phases = buildPhaseData(result.api, result.modelID, defs, result.tree, meshMapRef.current);
+      setPhaseData(phases);
+      setPhaseIdx(phases ? phases.phases.length - 1 : 0);
       setInfo({ ...result.info, name: sourceName });
       setTree(result.tree);
       setIsProjectModel(fromProject);
@@ -991,7 +1061,7 @@ export default function BimViewer() {
       const res = await fetch(DEMO_IFC_URL);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const buf = await res.arrayBuffer();
-      await loadFromBuffer(buf, "Modelo Demo (small.ifc)", false);
+      await loadFromBuffer(buf, "Residência Vértice (demo)", false);
     } catch (e) {
       setError("Não foi possível baixar o modelo demo. " + (e instanceof Error ? e.message : ""));
       setLoading(false);
@@ -1205,6 +1275,46 @@ export default function BimViewer() {
           )}
         </div>
       </div>
+
+      {/* Linha do tempo de marcos */}
+      {phaseData && phaseData.phases.length > 1 && (
+        <div className="flex items-center gap-3 lg:gap-5 bg-white dark:bg-navy-light/60 border-t lg:border border-zinc-200 dark:border-white/15 rounded-none lg:rounded-2xl px-4 lg:px-6 py-2.5 lg:py-3 shadow-lg shrink-0 mb-10 lg:mb-0">
+          <span className="hidden sm:block text-[9px] font-bold text-zinc-500 tracking-widest shrink-0">
+            LINHA DO TEMPO
+          </span>
+          <input
+            type="range"
+            min={0}
+            max={phaseData.phases.length - 1}
+            step={1}
+            value={phaseIdx}
+            onChange={e => setPhaseIdx(Number(e.target.value))}
+            className="flex-1 min-w-0 accent-primary"
+            aria-label="Fase da obra"
+          />
+          <div className="hidden lg:flex gap-1 shrink-0">
+            {phaseData.phases.map((p, i) => (
+              <button
+                key={p.num}
+                onClick={() => setPhaseIdx(i)}
+                className={`px-2 py-1 text-[9px] font-bold rounded transition-colors ${
+                  i <= phaseIdx
+                    ? "bg-primary/15 text-primary"
+                    : "bg-zinc-100 dark:bg-white/5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+                }`}
+              >
+                {p.name}
+              </button>
+            ))}
+          </div>
+          <div className="shrink-0 text-right w-24 lg:w-28">
+            <p className="text-xs font-bold text-navy dark:text-white truncate">
+              {phaseData.phases[phaseIdx]?.name}
+            </p>
+            <p className="text-[10px] text-primary font-bold">{progressPct}% da obra</p>
+          </div>
+        </div>
+      )}
 
       <BimBottomSheet>
         <PanelContent
