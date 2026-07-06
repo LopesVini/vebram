@@ -66,6 +66,12 @@
     @apply bg-background text-foreground font-sans antialiased;
   }
 
+  /* No tema escuro o body precisa acompanhar o app (navy-dark); sem isto,
+     --background continua branco e vaza uma faixa branca no rodapé. */
+  .dark body {
+    @apply bg-navy-dark text-white;
+  }
+
 
 }
 
