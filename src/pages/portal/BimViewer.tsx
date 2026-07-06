@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import {
   Box, Layers, Loader2, Maximize2, Search, ChevronRight, Eye, AlertCircle,
-  Expand, Shrink,
+  Expand, Shrink, Camera,
 } from "lucide-react";
 import * as THREE from "three";
 import { OrbitControls } from "three-stdlib";
@@ -174,6 +174,51 @@ function useThreeScene(canvasRef: React.RefObject<HTMLDivElement>) {
     controlsRef.current.update();
   }, []);
 
+  // Vistas predefinidas relativas ao bounding box atual do modelo
+  const setView = useCallback((view: "top" | "front" | "iso") => {
+    const camera = cameraRef.current;
+    const controls = controlsRef.current;
+    if (!camera || !controls) return;
+    const box = new THREE.Box3().setFromObject(modelGroupRef.current);
+    if (box.isEmpty()) return;
+    const center = box.getCenter(new THREE.Vector3());
+    const size   = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const dist   = maxDim * 1.6;
+    // topo: offset mínimo em z evita gimbal do OrbitControls no polo
+    if (view === "top")        camera.position.set(center.x, center.y + dist, center.z + dist * 0.001);
+    else if (view === "front") camera.position.set(center.x, center.y + size.y * 0.15, center.z + dist);
+    else                       camera.position.set(center.x + dist, center.y + dist * 0.7, center.z + dist);
+    controls.target.copy(center);
+    controls.update();
+  }, []);
+
+  // Plano de corte global: t em [0,1] percorre o bbox no eixo escolhido
+  const setClipping = useCallback((axis: "x" | "y" | "z" | null, t: number) => {
+    const renderer = rendererRef.current;
+    if (!renderer) return;
+    if (!axis) { renderer.clippingPlanes = []; return; }
+    const box = new THREE.Box3().setFromObject(modelGroupRef.current);
+    if (box.isEmpty()) { renderer.clippingPlanes = []; return; }
+    const normal = new THREE.Vector3(
+      axis === "x" ? -1 : 0,
+      axis === "y" ? -1 : 0,
+      axis === "z" ? -1 : 0,
+    );
+    const pos = box.min[axis] + (box.max[axis] - box.min[axis]) * t;
+    renderer.clippingPlanes = [new THREE.Plane(normal, pos)];
+  }, []);
+
+  // Renderiza um frame e exporta o canvas como PNG (data URL)
+  const screenshot = useCallback((): string | null => {
+    const renderer = rendererRef.current;
+    const scene    = sceneRef.current;
+    const camera   = cameraRef.current;
+    if (!renderer || !scene || !camera) return null;
+    renderer.render(scene, camera);
+    return renderer.domElement.toDataURL("image/png");
+  }, []);
+
   const raycasterRef = useRef(new THREE.Raycaster());
 
   // Retorna o expressID do mesh sob o ponteiro, ou null
@@ -206,7 +251,10 @@ function useThreeScene(canvasRef: React.RefObject<HTMLDivElement>) {
     }
   }, []);
 
-  return { modelGroup: modelGroupRef.current, fitToModel, fitToBox, clearModel, pick };
+  return {
+    modelGroup: modelGroupRef.current,
+    fitToModel, fitToBox, clearModel, pick, setView, setClipping, screenshot,
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -217,7 +265,7 @@ async function loadIfcIntoGroup(
   group: THREE.Group,
   meshMap: Map<number, THREE.Mesh[]>,
   onProgress: (msg: string) => void,
-): Promise<{ info: ModelInfo; tree: SpatialNode | null }> {
+): Promise<{ info: ModelInfo; tree: SpatialNode | null; api: IfcAPI; modelID: number }> {
   onProgress("Inicializando WASM...");
   const api = new IfcAPI();
   api.SetWasmPath("/wasm/");
@@ -272,7 +320,9 @@ async function loadIfcIntoGroup(
       threeMesh.applyMatrix4(matrix);
       threeMesh.castShadow    = true;
       threeMesh.receiveShadow = true;
-      threeMesh.userData.expressID = mesh.expressID;
+      threeMesh.userData.expressID       = mesh.expressID;
+      threeMesh.userData.origOpacity     = c.w;
+      threeMesh.userData.origTransparent = c.w < 1;
       group.add(threeMesh);
 
       const bucket = meshMap.get(mesh.expressID);
@@ -294,8 +344,8 @@ async function loadIfcIntoGroup(
   onProgress("Construindo árvore...");
   const tree = buildSpatialTree(api, modelID);
 
-  api.CloseModel(modelID);
-
+  // Modelo fica aberto: painel de propriedades consulta o IFC sob demanda.
+  // Quem carrega é responsável por CloseModel ao trocar de modelo/desmontar.
   return {
     info: {
       name:           "Modelo IFC",
@@ -304,18 +354,152 @@ async function loadIfcIntoGroup(
       bbox:           { width: size.x, height: size.y, depth: size.z },
     },
     tree,
+    api,
+    modelID,
   };
 }
 
-// Tipos IFC usados na árvore espacial
+// Tipos IFC usados na árvore espacial e nas propriedades
 const IFC_TYPE = {
-  SITE:          4097777520,
-  BUILDING:      1095909175,
-  STOREY:        3124254112,
-  SPACE:         3856911033,
-  REL_AGGREGATES: 160246688,
-  REL_CONTAINED: 3242617779,
+  SITE:            4097777520,
+  BUILDING:        1095909175,
+  STOREY:          3124254112,
+  SPACE:           3856911033,
+  REL_AGGREGATES:   160246688,
+  REL_CONTAINED:   3242617779,
+  REL_DEFINES_BY_PROPERTIES: 4186316022,
+  REL_ASSOCIATES_MATERIAL:   2655215786,
 } as const;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Propriedades IFC do elemento selecionado
+// ─────────────────────────────────────────────────────────────────────────────
+interface PropRow { name: string; value: string }
+interface PropGroup { group: string; items: PropRow[] }
+interface ElementProps {
+  name: string;
+  typeName: string;
+  globalId?: string;
+  objectType?: string;
+  storey?: string;
+  material?: string;
+  psets: PropGroup[];
+}
+
+interface DefinitionMaps {
+  psets: Map<number, number[]>;     // expressID do elemento → ids de pset/quantity
+  materials: Map<number, number>;   // expressID do elemento → id do material
+}
+
+// Indexa IfcRelDefinesByProperties e IfcRelAssociatesMaterial uma vez por modelo
+function buildDefinitionMaps(api: IfcAPI, modelID: number): DefinitionMaps {
+  const psets = new Map<number, number[]>();
+  const materials = new Map<number, number>();
+  try {
+    const rels = api.GetLineIDsWithType(modelID, IFC_TYPE.REL_DEFINES_BY_PROPERTIES);
+    for (let i = 0; i < rels.size(); i++) {
+      const rel = api.GetLine(modelID, rels.get(i));
+      const defId = rel?.RelatingPropertyDefinition?.value;
+      if (!defId) continue;
+      for (const o of rel?.RelatedObjects ?? []) {
+        if (!o?.value) continue;
+        const arr = psets.get(o.value);
+        if (arr) arr.push(defId);
+        else psets.set(o.value, [defId]);
+      }
+    }
+  } catch (e) { console.warn("Psets indisponíveis:", e); }
+  try {
+    const rels = api.GetLineIDsWithType(modelID, IFC_TYPE.REL_ASSOCIATES_MATERIAL);
+    for (let i = 0; i < rels.size(); i++) {
+      const rel = api.GetLine(modelID, rels.get(i));
+      const matId = rel?.RelatingMaterial?.value;
+      if (!matId) continue;
+      for (const o of rel?.RelatedObjects ?? []) {
+        if (o?.value) materials.set(o.value, matId);
+      }
+    }
+  } catch (e) { console.warn("Materiais indisponíveis:", e); }
+  return { psets, materials };
+}
+
+function formatIfcValue(v: unknown): string | null {
+  if (v == null) return null;
+  const val = typeof v === "object" ? (v as { value?: unknown }).value : v;
+  if (val == null) return null;
+  if (typeof val === "number" && !Number.isInteger(val)) {
+    return val.toFixed(3).replace(/\.?0+$/, "");
+  }
+  return String(val);
+}
+
+function findStoreyName(tree: SpatialNode | null, id: number): string | undefined {
+  if (!tree) return undefined;
+  const path = findPath(tree, id);
+  if (!path) return undefined;
+  for (let i = path.length - 2; i >= 0; i--) {
+    const n = findNode(tree, path[i]);
+    if (n?.type === "storey") return n.name;
+  }
+  return undefined;
+}
+
+function getElementProps(
+  api: IfcAPI,
+  modelID: number,
+  id: number,
+  defs: DefinitionMaps,
+  tree: SpatialNode | null,
+): ElementProps {
+  let name = `#${id}`;
+  let typeName = "Elemento";
+  let globalId: string | undefined;
+  let objectType: string | undefined;
+  try {
+    const line = api.GetLine(modelID, id);
+    name       = line?.Name?.value || name;
+    globalId   = line?.GlobalId?.value;
+    objectType = line?.ObjectType?.value || line?.PredefinedType?.value;
+  } catch { /* mantém defaults */ }
+  try {
+    typeName = api.GetNameFromTypeCode(api.GetLineType(modelID, id)) || typeName;
+  } catch { /* mantém default */ }
+
+  let material: string | undefined;
+  const matId = defs.materials.get(id);
+  if (matId) {
+    try {
+      const m = api.GetLine(modelID, matId, true);
+      material = m?.Name?.value
+        || m?.ForLayerSet?.MaterialLayers?.map((l: { Material?: { Name?: { value?: string } } }) => l?.Material?.Name?.value).filter(Boolean).join(", ")
+        || m?.Materials?.map((x: { Name?: { value?: string } }) => x?.Name?.value).filter(Boolean).join(", ")
+        || undefined;
+    } catch { /* material ilegível */ }
+  }
+
+  const psets: PropGroup[] = [];
+  for (const defId of defs.psets.get(id) ?? []) {
+    try {
+      const def = api.GetLine(modelID, defId, true);
+      const raw = def?.HasProperties ?? def?.Quantities ?? [];
+      const items: PropRow[] = [];
+      for (const p of raw) {
+        const pName = p?.Name?.value;
+        if (!pName) continue;
+        const value = formatIfcValue(p?.NominalValue)
+          ?? formatIfcValue(p?.LengthValue)
+          ?? formatIfcValue(p?.AreaValue)
+          ?? formatIfcValue(p?.VolumeValue)
+          ?? formatIfcValue(p?.WeightValue)
+          ?? formatIfcValue(p?.CountValue);
+        if (value !== null) items.push({ name: pName, value });
+      }
+      if (items.length) psets.push({ group: def?.Name?.value || "Propriedades", items });
+    } catch { /* pset ilegível, segue */ }
+  }
+
+  return { name, typeName, globalId, objectType, storey: findStoreyName(tree, id), material, psets };
+}
 
 // Constrói a árvore espacial real (Site → Building → Storey → elementos)
 // a partir das relações IfcRelAggregates e IfcRelContainedInSpatialStructure
@@ -445,7 +629,7 @@ function TreeNodeView({
 // ─────────────────────────────────────────────────────────────────────────────
 function PanelContent({
   search, setSearch, tree, hasModel, info, loading,
-  selectedId, onSelect, forceOpen, ancestorIds,
+  selectedId, onSelect, forceOpen, ancestorIds, selectedProps,
 }: {
   search: string;
   setSearch: (v: string) => void;
@@ -457,6 +641,7 @@ function PanelContent({
   onSelect: (node: SpatialNode) => void;
   forceOpen: boolean;
   ancestorIds: Set<number>;
+  selectedProps: ElementProps | null;
 }) {
   return (
     <>
@@ -485,6 +670,38 @@ function PanelContent({
         )}
       </div>
 
+      {selectedProps && (
+        <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-white/10 max-h-64 overflow-y-auto shrink-0">
+          <p className="text-[10px] font-bold text-zinc-500 mb-2 tracking-widest">PROPRIEDADES</p>
+          <div className="text-[10px] space-y-1">
+            {([
+              ["Nome", selectedProps.name],
+              ["Tipo", selectedProps.typeName],
+              ["Categoria", selectedProps.objectType],
+              ["Pavimento", selectedProps.storey],
+              ["Material", selectedProps.material],
+              ["GlobalId", selectedProps.globalId],
+            ] as const).filter(([, v]) => v).map(([label, value]) => (
+              <div key={label} className="flex justify-between gap-2">
+                <span className="text-zinc-500 shrink-0">{label}</span>
+                <span className="text-navy dark:text-white text-right truncate" title={value}>{value}</span>
+              </div>
+            ))}
+          </div>
+          {selectedProps.psets.map(g => (
+            <div key={g.group} className="mt-2">
+              <p className="text-[9px] font-bold text-zinc-400 mb-1 truncate">{g.group}</p>
+              {g.items.map(it => (
+                <div key={it.name} className="flex justify-between gap-2 text-[10px]">
+                  <span className="text-zinc-500 truncate">{it.name}</span>
+                  <span className="text-navy dark:text-white text-right truncate" title={it.value}>{it.value}</span>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+
       {info && (
         <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-white/10 text-[10px] text-zinc-500 space-y-1">
           <div className="flex justify-between"><span>Arquivo</span><span className="text-navy dark:text-white truncate ml-2 max-w-[180px]" title={info.name}>{info.name}</span></div>
@@ -500,10 +717,30 @@ function PanelContent({
 // ─────────────────────────────────────────────────────────────────────────────
 // Main page
 // ─────────────────────────────────────────────────────────────────────────────
+// Botão compacto das ferramentas de visibilidade
+function ToolBtn({
+  children, onClick, active = false,
+}: { children: React.ReactNode; onClick: () => void; active?: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-2.5 py-1.5 text-[10px] font-bold rounded-lg border shadow-lg transition-colors ${
+        active
+          ? "bg-primary text-white border-primary"
+          : "bg-white dark:bg-navy-light/80 text-zinc-600 dark:text-zinc-300 border-zinc-200 dark:border-white/10 hover:border-primary"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
 export default function BimViewer() {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef    = useRef<HTMLDivElement>(null);
-  const { modelGroup, fitToModel, fitToBox, clearModel, pick } = useThreeScene(containerRef);
+  const {
+    modelGroup, fitToModel, fitToBox, clearModel, pick, setView, setClipping, screenshot,
+  } = useThreeScene(containerRef);
   const { project, loading: projectLoading } = useClientProject();
 
   const [loading, setLoading]   = useState(false);
@@ -517,9 +754,23 @@ export default function BimViewer() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [nativeFullscreen, setNativeFullscreen] = useState(false);
   const [cssFullscreen, setCssFullscreen]       = useState(false);
+  const [selectedProps, setSelectedProps] = useState<ElementProps | null>(null);
+  const [hiddenIds, setHiddenIds] = useState<Set<number>>(new Set());
+  const [visMode, setVisMode] = useState<{ mode: "all" | "isolate" | "ghost"; ids: Set<number> }>(
+    { mode: "all", ids: new Set() },
+  );
+  const [clip, setClip] = useState<{ axis: "x" | "y" | "z" | null; t: number }>({ axis: null, t: 0.5 });
 
   const meshMapRef = useRef<Map<number, THREE.Mesh[]>>(new Map());
   const pointerDownRef = useRef<{ x: number; y: number } | null>(null);
+  const ifcRef = useRef<{ api: IfcAPI; modelID: number; defs: DefinitionMaps } | null>(null);
+
+  // Fecha o modelo IFC ao desmontar a página
+  useEffect(() => () => {
+    const h = ifcRef.current;
+    if (h) { try { h.api.CloseModel(h.modelID); } catch { /* já fechado */ } }
+    ifcRef.current = null;
+  }, []);
 
   const query = search.trim().toLowerCase();
 
@@ -558,6 +809,80 @@ export default function BimViewer() {
       }));
     }
   }, [query, selectedId, tree, info]);
+
+  // Propriedades IFC do elemento selecionado (consulta o modelo aberto)
+  useEffect(() => {
+    const h = ifcRef.current;
+    if (selectedId === null || !h) { setSelectedProps(null); return; }
+    try {
+      setSelectedProps(getElementProps(h.api, h.modelID, selectedId, h.defs, tree));
+    } catch {
+      setSelectedProps(null);
+    }
+  }, [selectedId, tree]);
+
+  // Visibilidade: ocultos + isolar/fantasma
+  useEffect(() => {
+    meshMapRef.current.forEach((meshes, id) => {
+      meshes.forEach(m => {
+        const mat = m.material as THREE.MeshStandardMaterial;
+        const hidden = hiddenIds.has(id) || (visMode.mode === "isolate" && !visMode.ids.has(id));
+        m.visible = !hidden;
+        if (visMode.mode === "ghost" && !visMode.ids.has(id)) {
+          mat.transparent = true;
+          mat.opacity = 0.12;
+          mat.depthWrite = false;
+        } else {
+          mat.transparent = !!m.userData.origTransparent;
+          mat.opacity = (m.userData.origOpacity as number) ?? 1;
+          mat.depthWrite = true;
+        }
+      });
+    });
+  }, [hiddenIds, visMode, info]);
+
+  // Plano de corte
+  useEffect(() => {
+    setClipping(clip.axis, clip.t);
+  }, [clip, setClipping, info]);
+
+  // Ids da seleção atual (elemento + descendentes)
+  const currentSelectionIds = useCallback((): Set<number> => {
+    if (selectedId === null) return new Set();
+    const node = tree ? findNode(tree, selectedId) : null;
+    return new Set(node ? collectIds(node) : [selectedId]);
+  }, [selectedId, tree]);
+
+  const isolateSelection = useCallback(() => {
+    const ids = currentSelectionIds();
+    if (ids.size) setVisMode({ mode: "isolate", ids });
+  }, [currentSelectionIds]);
+
+  const ghostSelection = useCallback(() => {
+    const ids = currentSelectionIds();
+    if (ids.size) setVisMode({ mode: "ghost", ids });
+  }, [currentSelectionIds]);
+
+  const hideSelection = useCallback(() => {
+    const ids = currentSelectionIds();
+    if (!ids.size) return;
+    setHiddenIds(prev => new Set([...prev, ...ids]));
+    setSelectedId(null);
+  }, [currentSelectionIds]);
+
+  const showAll = useCallback(() => {
+    setHiddenIds(new Set());
+    setVisMode({ mode: "all", ids: new Set() });
+  }, []);
+
+  const handleScreenshot = useCallback(() => {
+    const url = screenshot();
+    if (!url) return;
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `vertice-bim-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.png`;
+    a.click();
+  }, [screenshot]);
 
   // Enquadra a câmera no conjunto de elementos informado
   const focusIds = useCallback((ids: number[]) => {
@@ -628,11 +953,24 @@ export default function BimViewer() {
     setLoading(true);
     setError(null);
     setSelectedId(null);
+    setHiddenIds(new Set());
+    setVisMode({ mode: "all", ids: new Set() });
+    setClip({ axis: null, t: 0.5 });
     clearModel();
     meshMapRef.current.clear();
+    const prev = ifcRef.current;
+    if (prev) {
+      ifcRef.current = null;
+      try { prev.api.CloseModel(prev.modelID); } catch { /* já fechado */ }
+    }
     try {
       const data = new Uint8Array(buffer);
       const result = await loadIfcIntoGroup(data, modelGroup, meshMapRef.current, setProgress);
+      ifcRef.current = {
+        api: result.api,
+        modelID: result.modelID,
+        defs: buildDefinitionMaps(result.api, result.modelID),
+      };
       setInfo({ ...result.info, name: sourceName });
       setTree(result.tree);
       setIsProjectModel(fromProject);
@@ -715,6 +1053,7 @@ export default function BimViewer() {
             tree={displayTree} hasModel={!!tree} info={info} loading={loading}
             selectedId={selectedId} onSelect={handleSelectNode}
             forceOpen={!!query} ancestorIds={ancestorIds}
+            selectedProps={selectedProps}
           />
         </div>
 
@@ -772,8 +1111,67 @@ export default function BimViewer() {
               <button onClick={toggleFullscreen} className="w-10 h-10 bg-white dark:bg-navy-light/80 border border-zinc-200 dark:border-white/10 rounded-lg flex items-center justify-center text-zinc-500 hover:text-navy dark:hover:text-white hover:border-primary transition-colors shadow-lg" title={fullscreenActive ? "Sair da tela cheia" : "Tela cheia"}>
                 {fullscreenActive ? <Shrink size={16} /> : <Expand size={16} />}
               </button>
+              <button onClick={handleScreenshot} className="w-10 h-10 bg-white dark:bg-navy-light/80 border border-zinc-200 dark:border-white/10 rounded-lg flex items-center justify-center text-zinc-500 hover:text-navy dark:hover:text-white hover:border-primary transition-colors shadow-lg" title="Capturar PNG">
+                <Camera size={16} />
+              </button>
+              <div className="flex flex-col gap-1 mt-1">
+                {([["top", "TOPO"], ["front", "FRENTE"], ["iso", "ISO"]] as const).map(([v, label]) => (
+                  <button
+                    key={v}
+                    onClick={() => setView(v)}
+                    className="w-10 h-7 bg-white dark:bg-navy-light/80 border border-zinc-200 dark:border-white/10 rounded-lg text-[8px] font-bold text-zinc-500 hover:text-navy dark:hover:text-white hover:border-primary transition-colors shadow-lg"
+                    title={`Vista ${label.toLowerCase()}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
+
+          {/* Ferramentas de visibilidade (com seleção ativa ou estado alterado) */}
+          {(selectedId !== null || visMode.mode !== "all" || hiddenIds.size > 0) && (
+            <div className="absolute bottom-14 lg:bottom-4 left-4 z-10 flex flex-wrap gap-1.5 pointer-events-auto max-w-[60%]">
+              {selectedId !== null && (
+                <>
+                  <ToolBtn onClick={isolateSelection} active={visMode.mode === "isolate"}>ISOLAR</ToolBtn>
+                  <ToolBtn onClick={ghostSelection} active={visMode.mode === "ghost"}>FANTASMA</ToolBtn>
+                  <ToolBtn onClick={hideSelection}>OCULTAR</ToolBtn>
+                </>
+              )}
+              {(visMode.mode !== "all" || hiddenIds.size > 0) && (
+                <ToolBtn onClick={showAll}>MOSTRAR TUDO</ToolBtn>
+              )}
+            </div>
+          )}
+
+          {/* Plano de corte */}
+          {info && (
+            <div className="absolute bottom-24 lg:bottom-4 right-4 z-10 pointer-events-auto bg-white/90 dark:bg-black/60 backdrop-blur-md border border-zinc-200 dark:border-white/10 rounded-lg p-2 flex items-center gap-2 shadow-lg">
+              <span className="text-[9px] font-bold text-zinc-500 tracking-widest">CORTE</span>
+              {(["x", "y", "z"] as const).map(a => (
+                <button
+                  key={a}
+                  onClick={() => setClip(c => ({ axis: c.axis === a ? null : a, t: c.t }))}
+                  className={`w-6 h-6 text-[10px] font-bold rounded transition-colors ${
+                    clip.axis === a
+                      ? "bg-primary text-white"
+                      : "bg-zinc-100 dark:bg-white/10 text-zinc-500 hover:text-navy dark:hover:text-white"
+                  }`}
+                >
+                  {a.toUpperCase()}
+                </button>
+              ))}
+              {clip.axis && (
+                <input
+                  type="range" min={0} max={100} value={clip.t * 100}
+                  onChange={e => setClip(c => ({ ...c, t: Number(e.target.value) / 100 }))}
+                  className="w-24 lg:w-32 accent-primary"
+                  aria-label="Posição do plano de corte"
+                />
+              )}
+            </div>
+          )}
 
           {/* Loading overlay */}
           {loading && (
@@ -814,6 +1212,7 @@ export default function BimViewer() {
           tree={displayTree} hasModel={!!tree} info={info} loading={loading}
           selectedId={selectedId} onSelect={handleSelectNode}
           forceOpen={!!query} ancestorIds={ancestorIds}
+          selectedProps={selectedProps}
         />
       </BimBottomSheet>
     </div>
