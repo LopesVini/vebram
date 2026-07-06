@@ -24,6 +24,8 @@ const Projetos = lazy(() => import("./pages/institutional/Projetos"));
 const Processo = lazy(() => import("./pages/institutional/Processo"));
 const Orcamento = lazy(() => import("./pages/institutional/Orcamento"));
 const Contato = lazy(() => import("./pages/institutional/Contato"));
+const PoliticaPrivacidade = lazy(() => import("./pages/institutional/PoliticaPrivacidade"));
+const TermosDeUso = lazy(() => import("./pages/institutional/TermosDeUso"));
 const ClientLogin = lazy(() => import("./pages/portal/ClientLogin"));
 const PortalLayout = lazy(() => import("./components/portal/PortalLayout"));
 const ProjectDashboard = lazy(() => import("./pages/portal/ProjectDashboard"));
@@ -115,7 +117,9 @@ const App = () => (
               <Route path="/processo" element={<Processo />} />
               <Route path="/orcamento" element={<Orcamento />} />
               <Route path="/contato" element={<Contato />} />
-              
+              <Route path="/politica-de-privacidade" element={<PoliticaPrivacidade />} />
+              <Route path="/termos-de-uso" element={<TermosDeUso />} />
+
               {/* Área do Cliente (SaaS) */}
               <Route path="/login" element={<ClientLogin />} />
               <Route path="/portal" element={<PortalLayout />}>

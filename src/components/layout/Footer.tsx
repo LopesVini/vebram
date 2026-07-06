@@ -51,8 +51,8 @@ const Footer = () => {
             © {new Date().getFullYear()} VEBRAM Engenharia. Todos os direitos reservados.
           </p>
           <div className="flex gap-4 text-white/30 text-xs font-sans">
-            <a href="#" className="hover:text-white transition-colors">Política de Privacidade</a>
-            <a href="#" className="hover:text-white transition-colors">Termos de Uso</a>
+            <Link to="/politica-de-privacidade" className="hover:text-white transition-colors">Política de Privacidade</Link>
+            <Link to="/termos-de-uso" className="hover:text-white transition-colors">Termos de Uso</Link>
           </div>
         </div>
       </div>
