@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import {
   Box, Layers, Loader2, Maximize2, Search, ChevronRight, Eye, AlertCircle,
+  Expand, Shrink,
 } from "lucide-react";
 import * as THREE from "three";
 import { OrbitControls } from "three-stdlib";
@@ -22,6 +23,46 @@ interface SpatialNode {
   name: string;
   type: "site" | "building" | "storey" | "space" | "element";
   children: SpatialNode[];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helpers de árvore (busca, seleção, caminho até nó)
+// ─────────────────────────────────────────────────────────────────────────────
+function findNode(node: SpatialNode, id: number): SpatialNode | null {
+  if (node.id === id) return node;
+  for (const c of node.children) {
+    const found = findNode(c, id);
+    if (found) return found;
+  }
+  return null;
+}
+
+function findPath(node: SpatialNode, id: number): number[] | null {
+  if (node.id === id) return [node.id];
+  for (const c of node.children) {
+    const p = findPath(c, id);
+    if (p) return [node.id, ...p];
+  }
+  return null;
+}
+
+function collectIds(node: SpatialNode): number[] {
+  return [node.id, ...node.children.flatMap(collectIds)];
+}
+
+function collectMatchIds(node: SpatialNode, q: string, out: number[]) {
+  if (node.name.toLowerCase().includes(q)) out.push(node.id);
+  node.children.forEach(c => collectMatchIds(c, q, out));
+}
+
+// Mantém nós cujo nome bate com a busca ou que têm descendente que bate
+function filterTree(node: SpatialNode, q: string): SpatialNode | null {
+  const matches = node.name.toLowerCase().includes(q);
+  const children = node.children
+    .map(c => filterTree(c, q))
+    .filter((c): c is SpatialNode => c !== null);
+  if (!matches && children.length === 0) return null;
+  return { ...node, children: matches ? node.children : children };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -118,6 +159,42 @@ function useThreeScene(canvasRef: React.RefObject<HTMLDivElement>) {
     controlsRef.current.update();
   }, []);
 
+  // Enquadra a câmera num bounding box arbitrário mantendo a direção atual
+  const fitToBox = useCallback((box: THREE.Box3) => {
+    if (!cameraRef.current || !controlsRef.current || box.isEmpty()) return;
+    const center = box.getCenter(new THREE.Vector3());
+    const size   = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z, 1);
+    const dist   = maxDim * 2.2;
+    const dir = new THREE.Vector3()
+      .subVectors(cameraRef.current.position, controlsRef.current.target)
+      .normalize();
+    cameraRef.current.position.copy(center).addScaledVector(dir, dist);
+    controlsRef.current.target.copy(center);
+    controlsRef.current.update();
+  }, []);
+
+  const raycasterRef = useRef(new THREE.Raycaster());
+
+  // Retorna o expressID do mesh sob o ponteiro, ou null
+  const pick = useCallback((clientX: number, clientY: number): number | null => {
+    const renderer = rendererRef.current;
+    const camera   = cameraRef.current;
+    if (!renderer || !camera) return null;
+    const rect = renderer.domElement.getBoundingClientRect();
+    const ndc = new THREE.Vector2(
+      ((clientX - rect.left) / rect.width) * 2 - 1,
+      -((clientY - rect.top) / rect.height) * 2 + 1,
+    );
+    raycasterRef.current.setFromCamera(ndc, camera);
+    const hits = raycasterRef.current.intersectObjects(modelGroupRef.current.children, false);
+    for (const h of hits) {
+      const id = (h.object as THREE.Mesh).userData?.expressID;
+      if (typeof id === "number") return id;
+    }
+    return null;
+  }, []);
+
   const clearModel = useCallback(() => {
     while (modelGroupRef.current.children.length) {
       const child = modelGroupRef.current.children[0] as THREE.Mesh;
@@ -129,7 +206,7 @@ function useThreeScene(canvasRef: React.RefObject<HTMLDivElement>) {
     }
   }, []);
 
-  return { modelGroup: modelGroupRef.current, fitToModel, clearModel };
+  return { modelGroup: modelGroupRef.current, fitToModel, fitToBox, clearModel, pick };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -138,6 +215,7 @@ function useThreeScene(canvasRef: React.RefObject<HTMLDivElement>) {
 async function loadIfcIntoGroup(
   data: Uint8Array,
   group: THREE.Group,
+  meshMap: Map<number, THREE.Mesh[]>,
   onProgress: (msg: string) => void,
 ): Promise<{ info: ModelInfo; tree: SpatialNode | null }> {
   onProgress("Inicializando WASM...");
@@ -194,7 +272,12 @@ async function loadIfcIntoGroup(
       threeMesh.applyMatrix4(matrix);
       threeMesh.castShadow    = true;
       threeMesh.receiveShadow = true;
+      threeMesh.userData.expressID = mesh.expressID;
       group.add(threeMesh);
+
+      const bucket = meshMap.get(mesh.expressID);
+      if (bucket) bucket.push(threeMesh);
+      else meshMap.set(mesh.expressID, [threeMesh]);
 
       meshCount++;
       triCount += idx.length / 3;
@@ -224,13 +307,20 @@ async function loadIfcIntoGroup(
   };
 }
 
-// Constrói uma árvore espacial básica (Site → Building → Storey)
+// Tipos IFC usados na árvore espacial
+const IFC_TYPE = {
+  SITE:          4097777520,
+  BUILDING:      1095909175,
+  STOREY:        3124254112,
+  SPACE:         3856911033,
+  REL_AGGREGATES: 160246688,
+  REL_CONTAINED: 3242617779,
+} as const;
+
+// Constrói a árvore espacial real (Site → Building → Storey → elementos)
+// a partir das relações IfcRelAggregates e IfcRelContainedInSpatialStructure
 function buildSpatialTree(api: IfcAPI, modelID: number): SpatialNode | null {
   try {
-    // IFCSITE = 4097777520, IFCBUILDING = 1095909175, IFCBUILDINGSTOREY = 3124254112, IFCSPACE = 3856911033
-    const sites    = api.GetLineIDsWithType(modelID, 4097777520);
-    if (sites.size() === 0) return null;
-
     const getName = (id: number, fallback: string) => {
       try {
         const ent = api.GetLine(modelID, id);
@@ -238,29 +328,53 @@ function buildSpatialTree(api: IfcAPI, modelID: number): SpatialNode | null {
       } catch { return fallback; }
     };
 
-    const siteId = sites.get(0);
-    const root: SpatialNode = {
-      id: siteId, name: getName(siteId, "Site"), type: "site", children: [],
+    const typeOf = (id: number): SpatialNode["type"] => {
+      try {
+        const t = api.GetLineType(modelID, id);
+        if (t === IFC_TYPE.SITE)     return "site";
+        if (t === IFC_TYPE.BUILDING) return "building";
+        if (t === IFC_TYPE.STOREY)   return "storey";
+        if (t === IFC_TYPE.SPACE)    return "space";
+      } catch { /* segue como element */ }
+      return "element";
     };
 
-    const buildings = api.GetLineIDsWithType(modelID, 1095909175);
-    for (let b = 0; b < buildings.size(); b++) {
-      const bId = buildings.get(b);
-      const bNode: SpatialNode = {
-        id: bId, name: getName(bId, "Edifício"), type: "building", children: [],
-      };
-      root.children.push(bNode);
+    // parentId → filhos (decomposição + contenção espacial)
+    const childrenOf = new Map<number, number[]>();
+    const addKids = (parent: number | undefined, kids: number[]) => {
+      if (!parent || kids.length === 0) return;
+      const arr = childrenOf.get(parent);
+      if (arr) arr.push(...kids);
+      else childrenOf.set(parent, [...kids]);
+    };
 
-      const storeys = api.GetLineIDsWithType(modelID, 3124254112);
-      for (let s = 0; s < storeys.size(); s++) {
-        const sId = storeys.get(s);
-        bNode.children.push({
-          id: sId, name: getName(sId, `Pavimento ${s + 1}`), type: "storey", children: [],
-        });
+    for (const relType of [IFC_TYPE.REL_AGGREGATES, IFC_TYPE.REL_CONTAINED]) {
+      const rels = api.GetLineIDsWithType(modelID, relType);
+      for (let i = 0; i < rels.size(); i++) {
+        const rel = api.GetLine(modelID, rels.get(i));
+        const parent = relType === IFC_TYPE.REL_AGGREGATES
+          ? rel?.RelatingObject?.value
+          : rel?.RelatingStructure?.value;
+        const kids = (relType === IFC_TYPE.REL_AGGREGATES
+          ? rel?.RelatedObjects
+          : rel?.RelatedElements
+        )?.map((r: { value: number }) => r.value) ?? [];
+        addKids(parent, kids);
       }
     }
 
-    return root;
+    const build = (id: number, fallback: string): SpatialNode => ({
+      id,
+      name: getName(id, fallback),
+      type: typeOf(id),
+      children: (childrenOf.get(id) ?? []).map(c => build(c, "Elemento")),
+    });
+
+    const sites = api.GetLineIDsWithType(modelID, IFC_TYPE.SITE);
+    if (sites.size() > 0) return build(sites.get(0), "Site");
+    const buildings = api.GetLineIDsWithType(modelID, IFC_TYPE.BUILDING);
+    if (buildings.size() > 0) return build(buildings.get(0), "Edifício");
+    return null;
   } catch (e) {
     console.warn("Falha ao construir árvore IFC:", e);
     return null;
@@ -270,25 +384,56 @@ function buildSpatialTree(api: IfcAPI, modelID: number): SpatialNode | null {
 // ─────────────────────────────────────────────────────────────────────────────
 // Tree node UI
 // ─────────────────────────────────────────────────────────────────────────────
-function TreeNodeView({ node, depth = 0 }: { node: SpatialNode; depth?: number }) {
+function TreeNodeView({
+  node, depth = 0, selectedId, onSelect, forceOpen, ancestorIds,
+}: {
+  node: SpatialNode;
+  depth?: number;
+  selectedId: number | null;
+  onSelect: (node: SpatialNode) => void;
+  forceOpen: boolean;
+  ancestorIds: Set<number>;
+}) {
   const [open, setOpen] = useState(depth < 2);
+  const isOpen = forceOpen || open || ancestorIds.has(node.id);
+  const isSelected = selectedId === node.id;
+  const rowRef = useRef<HTMLDivElement>(null);
   const Icon = node.type === "storey" ? Layers : Box;
+
+  useEffect(() => {
+    if (isSelected) rowRef.current?.scrollIntoView({ block: "nearest" });
+  }, [isSelected]);
 
   return (
     <div className="mb-1">
       <div
-        onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-2 p-1.5 hover:bg-zinc-50 dark:hover:bg-white/5 rounded-lg cursor-pointer transition-colors group text-navy dark:text-white"
+        ref={rowRef}
+        onClick={() => onSelect(node)}
+        className={`flex items-center gap-2 p-1.5 rounded-lg cursor-pointer transition-colors group text-navy dark:text-white ${
+          isSelected
+            ? "bg-primary/15 ring-1 ring-primary/40"
+            : "hover:bg-zinc-50 dark:hover:bg-white/5"
+        }`}
         style={{ paddingLeft: `${depth * 12 + 8}px` }}
       >
-        {node.children.length > 0
-          ? <ChevronRight size={13} className={`text-zinc-500 transition-transform ${open ? "rotate-90" : ""}`} />
-          : <span className="w-[13px]" />}
+        {node.children.length > 0 ? (
+          <button
+            onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
+            className="shrink-0 flex items-center justify-center"
+            aria-label={isOpen ? "Recolher" : "Expandir"}
+          >
+            <ChevronRight size={13} className={`text-zinc-500 transition-transform ${isOpen ? "rotate-90" : ""}`} />
+          </button>
+        ) : <span className="w-[13px] shrink-0" />}
         <Icon size={13} className="text-primary shrink-0" />
         <span className="text-xs font-bold truncate">{node.name}</span>
       </div>
-      {open && node.children.map(c => (
-        <TreeNodeView key={c.id} node={c} depth={depth + 1} />
+      {isOpen && node.children.map(c => (
+        <TreeNodeView
+          key={c.id} node={c} depth={depth + 1}
+          selectedId={selectedId} onSelect={onSelect}
+          forceOpen={forceOpen} ancestorIds={ancestorIds}
+        />
       ))}
     </div>
   );
@@ -299,13 +444,19 @@ function TreeNodeView({ node, depth = 0 }: { node: SpatialNode; depth?: number }
 // pela bottom sheet mobile
 // ─────────────────────────────────────────────────────────────────────────────
 function PanelContent({
-  search, setSearch, tree, info, loading,
+  search, setSearch, tree, hasModel, info, loading,
+  selectedId, onSelect, forceOpen, ancestorIds,
 }: {
   search: string;
   setSearch: (v: string) => void;
   tree: SpatialNode | null;
+  hasModel: boolean;
   info: ModelInfo | null;
   loading: boolean;
+  selectedId: number | null;
+  onSelect: (node: SpatialNode) => void;
+  forceOpen: boolean;
+  ancestorIds: Set<number>;
 }) {
   return (
     <>
@@ -321,9 +472,17 @@ function PanelContent({
       <div className="flex-1 overflow-y-auto pr-1">
         <p className="text-[10px] font-bold text-zinc-500 mb-2 tracking-widest">HIERARQUIA DO PROJETO</p>
         {!tree && !loading && (
-          <p className="text-xs text-zinc-400 px-2 py-3">Sem modelo carregado.</p>
+          <p className="text-xs text-zinc-400 px-2 py-3">
+            {hasModel ? "Nenhum elemento encontrado." : "Sem modelo carregado."}
+          </p>
         )}
-        {tree && <TreeNodeView node={tree} />}
+        {tree && (
+          <TreeNodeView
+            node={tree}
+            selectedId={selectedId} onSelect={onSelect}
+            forceOpen={forceOpen} ancestorIds={ancestorIds}
+          />
+        )}
       </div>
 
       {info && (
@@ -343,7 +502,8 @@ function PanelContent({
 // ─────────────────────────────────────────────────────────────────────────────
 export default function BimViewer() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { modelGroup, fitToModel, clearModel } = useThreeScene(containerRef);
+  const viewerRef    = useRef<HTMLDivElement>(null);
+  const { modelGroup, fitToModel, fitToBox, clearModel, pick } = useThreeScene(containerRef);
   const { project, loading: projectLoading } = useClientProject();
 
   const [loading, setLoading]   = useState(false);
@@ -354,6 +514,108 @@ export default function BimViewer() {
   const [search, setSearch]     = useState("");
   const [isProjectModel, setIsProjectModel] = useState(false);
   const [showPill, setShowPill] = useState(true);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [nativeFullscreen, setNativeFullscreen] = useState(false);
+  const [cssFullscreen, setCssFullscreen]       = useState(false);
+
+  const meshMapRef = useRef<Map<number, THREE.Mesh[]>>(new Map());
+  const pointerDownRef = useRef<{ x: number; y: number } | null>(null);
+
+  const query = search.trim().toLowerCase();
+
+  const displayTree = useMemo(
+    () => (tree && query ? filterTree(tree, query) : tree),
+    [tree, query],
+  );
+
+  const ancestorIds = useMemo(() => {
+    if (!tree || selectedId === null) return new Set<number>();
+    const path = findPath(tree, selectedId);
+    return new Set(path ? path.slice(0, -1) : []);
+  }, [tree, selectedId]);
+
+  // Highlight 3D: reseta emissive de tudo, pinta matches da busca, depois seleção
+  useEffect(() => {
+    meshMapRef.current.forEach(meshes => meshes.forEach(m => {
+      (m.material as THREE.MeshStandardMaterial).emissive?.setHex(0x000000);
+    }));
+    if (query && tree) {
+      const ids: number[] = [];
+      collectMatchIds(tree, query, ids);
+      ids.forEach(id => meshMapRef.current.get(id)?.forEach(m => {
+        const mat = m.material as THREE.MeshStandardMaterial;
+        mat.emissive.setHex(0xd97706);
+        mat.emissiveIntensity = 0.45;
+      }));
+    }
+    if (selectedId !== null) {
+      const node = tree ? findNode(tree, selectedId) : null;
+      const ids = node ? collectIds(node) : [selectedId];
+      ids.forEach(id => meshMapRef.current.get(id)?.forEach(m => {
+        const mat = m.material as THREE.MeshStandardMaterial;
+        mat.emissive.setHex(0x3b82f6);
+        mat.emissiveIntensity = 0.85;
+      }));
+    }
+  }, [query, selectedId, tree, info]);
+
+  // Enquadra a câmera no conjunto de elementos informado
+  const focusIds = useCallback((ids: number[]) => {
+    const box = new THREE.Box3();
+    let found = false;
+    ids.forEach(id => meshMapRef.current.get(id)?.forEach(m => {
+      box.expandByObject(m);
+      found = true;
+    }));
+    if (found) fitToBox(box);
+  }, [fitToBox]);
+
+  const handleSelectNode = useCallback((node: SpatialNode) => {
+    if (selectedId === node.id) {
+      setSelectedId(null);
+      return;
+    }
+    setSelectedId(node.id);
+    focusIds(collectIds(node));
+  }, [selectedId, focusIds]);
+
+  // Clique no 3D: raycast → seleciona nó correspondente; clique no vazio desmarca.
+  // Distingue clique de arrasto (orbit) pela distância do ponteiro.
+  const onViewerPointerDown = useCallback((e: React.PointerEvent) => {
+    pointerDownRef.current = { x: e.clientX, y: e.clientY };
+  }, []);
+
+  const onViewerPointerUp = useCallback((e: React.PointerEvent) => {
+    const d = pointerDownRef.current;
+    pointerDownRef.current = null;
+    if (!d || Math.hypot(e.clientX - d.x, e.clientY - d.y) > 6) return;
+    const id = pick(e.clientX, e.clientY);
+    if (id === null) setSelectedId(null);
+    else setSelectedId(prev => (prev === id ? null : id));
+  }, [pick]);
+
+  // Fullscreen nativo com fallback CSS (iOS Safari não suporta requestFullscreen em div)
+  useEffect(() => {
+    const onFs = () => setNativeFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onFs);
+    return () => document.removeEventListener("fullscreenchange", onFs);
+  }, []);
+
+  const fullscreenActive = nativeFullscreen || cssFullscreen;
+
+  const toggleFullscreen = useCallback(() => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+      return;
+    }
+    if (cssFullscreen) {
+      setCssFullscreen(false);
+      return;
+    }
+    const el = viewerRef.current;
+    if (el?.requestFullscreen) el.requestFullscreen().catch(() => setCssFullscreen(true));
+    else setCssFullscreen(true);
+  }, [cssFullscreen]);
 
   useEffect(() => {
     if (!info) return;
@@ -365,10 +627,12 @@ export default function BimViewer() {
   const loadFromBuffer = useCallback(async (buffer: ArrayBuffer, sourceName: string, fromProject = false) => {
     setLoading(true);
     setError(null);
+    setSelectedId(null);
     clearModel();
+    meshMapRef.current.clear();
     try {
       const data = new Uint8Array(buffer);
-      const result = await loadIfcIntoGroup(data, modelGroup, setProgress);
+      const result = await loadIfcIntoGroup(data, modelGroup, meshMapRef.current, setProgress);
       setInfo({ ...result.info, name: sourceName });
       setTree(result.tree);
       setIsProjectModel(fromProject);
@@ -446,12 +710,29 @@ export default function BimViewer() {
 
         {/* Sidebar / Tree View */}
         <div className="hidden lg:flex w-80 bg-white dark:bg-navy-light/60 border border-zinc-200 dark:border-white/15 rounded-2xl p-4 flex-col shadow-lg overflow-hidden">
-          <PanelContent search={search} setSearch={setSearch} tree={tree} info={info} loading={loading} />
+          <PanelContent
+            search={search} setSearch={setSearch}
+            tree={displayTree} hasModel={!!tree} info={info} loading={loading}
+            selectedId={selectedId} onSelect={handleSelectNode}
+            forceOpen={!!query} ancestorIds={ancestorIds}
+          />
         </div>
 
         {/* 3D Viewer */}
-        <div className="flex-1 bg-zinc-100 dark:bg-[#0A0A0E] border-y lg:border border-zinc-200 dark:border-white/15 rounded-none lg:rounded-2xl relative overflow-hidden shadow-inner">
-          <div ref={containerRef} className="absolute inset-0" />
+        <div
+          ref={viewerRef}
+          className={`bg-zinc-100 dark:bg-[#0A0A0E] border-zinc-200 dark:border-white/15 overflow-hidden shadow-inner ${
+            cssFullscreen
+              ? "fixed inset-0 z-[100] rounded-none border-0"
+              : "flex-1 border-y lg:border rounded-none lg:rounded-2xl relative"
+          }`}
+        >
+          <div
+            ref={containerRef}
+            className="absolute inset-0"
+            onPointerDown={onViewerPointerDown}
+            onPointerUp={onViewerPointerUp}
+          />
 
           {/* Pill mobile: nome do modelo, some sozinha */}
           {info && (
@@ -487,6 +768,9 @@ export default function BimViewer() {
             <div className="ml-auto flex flex-col gap-2 pointer-events-auto">
               <button onClick={fitToModel} className="w-10 h-10 bg-white dark:bg-navy-light/80 border border-zinc-200 dark:border-white/10 rounded-lg flex items-center justify-center text-zinc-500 hover:text-navy dark:hover:text-white hover:border-primary transition-colors shadow-lg" title="Enquadrar">
                 <Maximize2 size={16} />
+              </button>
+              <button onClick={toggleFullscreen} className="w-10 h-10 bg-white dark:bg-navy-light/80 border border-zinc-200 dark:border-white/10 rounded-lg flex items-center justify-center text-zinc-500 hover:text-navy dark:hover:text-white hover:border-primary transition-colors shadow-lg" title={fullscreenActive ? "Sair da tela cheia" : "Tela cheia"}>
+                {fullscreenActive ? <Shrink size={16} /> : <Expand size={16} />}
               </button>
             </div>
           </div>
@@ -525,7 +809,12 @@ export default function BimViewer() {
       </div>
 
       <BimBottomSheet>
-        <PanelContent search={search} setSearch={setSearch} tree={tree} info={info} loading={loading} />
+        <PanelContent
+          search={search} setSearch={setSearch}
+          tree={displayTree} hasModel={!!tree} info={info} loading={loading}
+          selectedId={selectedId} onSelect={handleSelectNode}
+          forceOpen={!!query} ancestorIds={ancestorIds}
+        />
       </BimBottomSheet>
     </div>
   );
