@@ -53,7 +53,8 @@ export interface TheVerticeEvent {
   id: string;
   user_id: string;
   date: string;
-  type: "ferias" | "ocupado" | "disponivel";
+  type: string;
+  color?: string | null;
   note: string | null;
   created_at: string;
 }
@@ -208,13 +209,14 @@ export function useTheVertice() {
     return { error };
   };
 
-  const addEvent = async (date: string, type: "ferias" | "ocupado" | "disponivel", note: string | null) => {
+  const addEvent = async (date: string, type: string, note: string | null, color: string | null = null) => {
     if (!user) return { error: new Error("Usuário não autenticado") };
     const { error } = await supabase.from("events").insert({
       user_id: user.id,
       date,
       type,
       note,
+      color,
     });
     if (!error) fetchAll(true);
     return { error };
