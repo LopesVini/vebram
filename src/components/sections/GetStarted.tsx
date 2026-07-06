@@ -54,27 +54,7 @@ const GetStarted = () => {
       })
       .catch((err) => console.error("Erro Supabase:", err));
 
-    // 2. Fire and forget no Render (se estiver dormindo, vai demorar 50s no background, mas não trava a tela)
-    const automationUrl = import.meta.env.VITE_AUTOMATION_URL;
-    const automationKey = import.meta.env.VITE_AUTOMATION_KEY;
-    
-    if (automationUrl && automationKey) {
-      fetch(`${automationUrl}/process-quote`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": automationKey,
-        },
-        body: JSON.stringify({
-          nome,
-          email,
-          celular,
-          cidade,
-          tipo,
-          mensagem: message,
-        }),
-      }).catch(err => console.error("Aviso: Falha ao chamar API do Render:", err));
-    }
+    // 2. Insert acima dispara o webhook Supabase -> Render (/webhook/supabase), que roda o pipeline de automação.
 
     // 3. Libera instantaneamente a tela de sucesso!
     setTimeout(() => {

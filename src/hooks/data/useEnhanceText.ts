@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
 
-const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 const MODEL = "llama-3.3-70b-versatile";
 
 // Botão "Melhorar com IA": reescreve um texto com o tom definido pelo
@@ -11,17 +11,11 @@ export function useEnhanceText(systemPrompt: string) {
 
   async function enhance(text: string): Promise<string | null> {
     if (!text.trim()) return null;
-    const apiKey = import.meta.env.VITE_GROQ_API_KEY;
-    if (!apiKey) {
-      toast.error("Chave da API do Groq não configurada.");
-      return null;
-    }
     setIsEnhancing(true);
     try {
-      const response = await fetch(GROQ_URL, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
+      // Chama a Edge Function (chave Groq fica no servidor, nunca no bundle)
+      const { data, error } = await supabase.functions.invoke("chat-groq", {
+        body: {
           model: MODEL,
           messages: [
             { role: "system", content: systemPrompt },
@@ -29,10 +23,9 @@ export function useEnhanceText(systemPrompt: string) {
           ],
           temperature: 0.5,
           max_tokens: 500,
-        }),
+        },
       });
-      if (!response.ok) throw new Error(`Groq HTTP ${response.status}`);
-      const data = await response.json();
+      if (error) throw error;
       const out = data.choices?.[0]?.message?.content?.trim();
       if (!out) throw new Error("Resposta vazia da IA");
       return out;
