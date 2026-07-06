@@ -228,6 +228,48 @@ export function useTheVertice() {
     return { error };
   };
 
+  const saveCustomCategory = async (name: string, color: string) => {
+    if (!user) return { error: new Error("Usuário não autenticado") };
+    const metadata = myProfile?.metadata || {};
+    const existing: { name: string; color: string }[] = Array.isArray(metadata.custom_categories)
+      ? (metadata.custom_categories as { name: string; color: string }[])
+      : [];
+    
+    if (existing.some(c => c.name.toLowerCase() === name.toLowerCase())) {
+      return { error: null };
+    }
+
+    const updatedCategories = [...existing, { name, color }];
+    const updatedMetadata = { ...metadata, custom_categories: updatedCategories };
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ metadata: updatedMetadata })
+      .eq("id", user.id);
+
+    if (!error) fetchAll(true);
+    return { error };
+  };
+
+  const deleteCustomCategory = async (name: string) => {
+    if (!user) return { error: new Error("Usuário não autenticado") };
+    const metadata = myProfile?.metadata || {};
+    const existing: { name: string; color: string }[] = Array.isArray(metadata.custom_categories)
+      ? (metadata.custom_categories as { name: string; color: string }[])
+      : [];
+
+    const updatedCategories = existing.filter(c => c.name.toLowerCase() !== name.toLowerCase());
+    const updatedMetadata = { ...metadata, custom_categories: updatedCategories };
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ metadata: updatedMetadata })
+      .eq("id", user.id);
+
+    if (!error) fetchAll(true);
+    return { error };
+  };
+
   const addPoll = async (question: string, optionTexts: string[]) => {
     if (!user) return { error: new Error("Usuário não autenticado") };
     const { data: poll, error: pollError } = await supabase.from("polls").insert({
@@ -349,6 +391,8 @@ export function useTheVertice() {
     addComment,
     addEvent,
     deleteEvent,
+    saveCustomCategory,
+    deleteCustomCategory,
     addPoll,
     votePoll,
     incrementViews,

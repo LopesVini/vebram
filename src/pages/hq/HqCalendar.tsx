@@ -24,16 +24,25 @@ const PRESETS_COLORS = [
 ];
 
 export default function HqCalendar() {
-  const { events, profiles, myProfile, addEvent, deleteEvent } = useTheVertice();
+  const { events, profiles, myProfile, addEvent, deleteEvent, saveCustomCategory, deleteCustomCategory } = useTheVertice();
   const [ref, setRef] = useState(new Date());
   const [dayOpen, setDayOpen] = useState<string | null>(null);
   const [type, setType] = useState<string>("disponivel");
   const [customType, setCustomType] = useState("");
   const [selectedColor, setSelectedColor] = useState("#7e22ce");
+  const [shouldSaveCategory, setShouldSaveCategory] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
 
   const userName = (id: string) => profileName(profiles.find((p) => p.id === id));
+
+  const savedCategories = useMemo(() => {
+    const metadata = myProfile?.metadata || {};
+    return Array.isArray(metadata.custom_categories)
+      ? (metadata.custom_categories as { name: string; color: string }[])
+      : [];
+  }, [myProfile]);
 
   function move(d: number) {
     const n = new Date(ref);
@@ -47,22 +56,44 @@ export default function HqCalendar() {
     setNote("");
     setCustomType("");
     setSelectedColor("#7e22ce");
+    setShouldSaveCategory(false);
+    setShowAddForm(false);
   }
 
   async function save() {
     if (!dayOpen) return;
-    const finalType = type === "custom" ? customType.trim() : type;
-    if (type === "custom" && !finalType) {
+    const isCustom = type === "custom";
+    const finalType = isCustom ? customType.trim() : type;
+    if (isCustom && !finalType) {
       alert("Por favor, digite o nome da categoria.");
       return;
     }
+
+    const isPredefined = EVENT_TYPES[finalType as EventType] !== undefined;
+
+    let finalColor = null;
+    if (isCustom) {
+      finalColor = selectedColor;
+    } else if (!isPredefined) {
+      const saved = savedCategories.find(c => c.name === finalType);
+      if (saved) {
+        finalColor = saved.color;
+      }
+    }
+
     setSaving(true);
-    const finalColor = type === "custom" ? selectedColor : null;
     const { error } = await addEvent(dayOpen, finalType, note.trim() || null, finalColor);
+    
+    if (!error && isCustom && shouldSaveCategory) {
+      await saveCustomCategory(finalType, selectedColor);
+    }
+
     setSaving(false);
     if (error) return alert(error.message);
     setNote("");
     setCustomType("");
+    setShouldSaveCategory(false);
+    setShowAddForm(false);
     setDayOpen(null);
   }
 
@@ -252,87 +283,170 @@ export default function HqCalendar() {
               })}
           </div>
 
-          <div className="space-y-3 pt-2">
-            <div>
-              <label className="block text-xs font-bold text-zinc-500 mb-1.5">Adicionar marcação (como você)</label>
-              <select
-                value={type}
-                onChange={(e) => setType(e.target.value)}
-                className="w-full bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-xl px-3 py-2.5 text-sm text-navy dark:text-white outline-none focus:border-green-400"
-              >
-                <option value="disponivel">🔵 Disponível</option>
-                <option value="ocupado">🔴 Ocupado / Compromisso</option>
-                <option value="ferias">🌴 Férias</option>
-                <option value="custom">✨ Outro (Personalizado)</option>
-              </select>
-            </div>
-
-            {type === "custom" && (
-              <div className="space-y-3 animate-fade-up">
-                <div>
-                  <label className="block text-xs font-bold text-zinc-500 mb-1.5">Nome da Categoria</label>
-                  <input
-                    value={customType}
-                    onChange={(e) => setCustomType(e.target.value)}
-                    placeholder="Ex: Home Office, Viagem, Reunião"
-                    className="w-full bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-xl px-3 py-2.5 text-sm text-navy dark:text-white outline-none focus:border-green-400"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-zinc-500 mb-1.5">Escolha uma Cor</label>
-                  <div className="flex gap-2 flex-wrap items-center">
-                    {PRESETS_COLORS.map((c) => (
-                      <button
-                        key={c}
-                        type="button"
-                        onClick={() => setSelectedColor(c)}
-                        className={`w-7 h-7 rounded-full border-2 transition-all ${
-                          selectedColor === c
-                            ? "border-navy dark:border-white scale-110 shadow-sm"
-                            : "border-transparent hover:scale-105"
-                        }`}
-                        style={{ backgroundColor: c }}
-                      />
-                    ))}
-                    <div className="relative w-7 h-7 rounded-full border-2 border-dashed border-zinc-300 dark:border-white/20 hover:scale-105 overflow-hidden flex items-center justify-center" title="Cor personalizada">
-                      <input
-                        type="color"
-                        value={selectedColor}
-                        onChange={(e) => setSelectedColor(e.target.value)}
-                        className="absolute inset-0 w-12 h-12 -translate-x-2 -translate-y-2 cursor-pointer border-none p-0 bg-transparent"
-                      />
-                      <span className="text-[10px] pointer-events-none text-zinc-400">+</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-xs font-bold text-zinc-500 mb-1.5">Observação (opcional)</label>
-              <input
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder="Ex: Visita técnica obra Silva"
-                className="w-full bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-xl px-3 py-2.5 text-sm text-navy dark:text-white outline-none focus:border-green-400"
-              />
-            </div>
-            <div className="flex justify-end gap-2 pt-1">
+          {/* Modo padrão: Lista de Agendamentos */}
+          {!showAddForm && (
+            <div className="pt-4 flex justify-end gap-2 border-t border-zinc-100 dark:border-white/5 mt-3">
               <button
+                type="button"
                 onClick={() => setDayOpen(null)}
                 className="px-4 py-2.5 rounded-xl text-sm font-bold bg-zinc-100 dark:bg-white/5 text-zinc-600 dark:text-zinc-300"
               >
                 Fechar
               </button>
               <button
-                onClick={save}
-                disabled={saving}
-                className="px-4 py-2.5 rounded-xl text-sm font-bold bg-green-600 hover:bg-green-700 text-white disabled:opacity-60"
+                type="button"
+                onClick={() => setShowAddForm(true)}
+                className="px-4 py-2.5 rounded-xl text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1.5 shadow-lg shadow-blue-500/20"
               >
-                {saving ? "Adicionando…" : "Adicionar"}
+                <Plus size={15} /> Adicionar Marcação
               </button>
             </div>
-          </div>
+          )}
+
+          {/* Modo Formulário: Criação de Evento */}
+          {showAddForm && (
+            <div className="space-y-3 pt-2 border-t border-zinc-100 dark:border-white/5 mt-3">
+              <div>
+                <label className="block text-xs font-bold text-zinc-500 mb-1.5">Categoria da marcação (como você)</label>
+                <select
+                  value={type}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setType(val);
+                    if (val !== "custom" && val !== "disponivel" && val !== "ocupado" && val !== "ferias") {
+                      const found = savedCategories.find(c => c.name === val);
+                      if (found) {
+                        setCustomType(found.name);
+                        setSelectedColor(found.color);
+                      }
+                    }
+                  }}
+                  className="w-full bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-xl px-3 py-2.5 text-sm text-navy dark:text-white outline-none focus:border-green-400"
+                >
+                  <option value="disponivel">🔵 Disponível</option>
+                  <option value="ocupado">🔴 Ocupado / Compromisso</option>
+                  <option value="ferias">🌴 Férias</option>
+                  {savedCategories.map((c) => (
+                    <option key={c.name} value={c.name}>
+                      ✨ {c.name}
+                    </option>
+                  ))}
+                  <option value="custom">✨ Outro (Novo Personalizado)</option>
+                </select>
+              </div>
+
+              {savedCategories.length > 0 && (
+                <div className="pt-0.5">
+                  <label className="block text-[10px] font-bold text-zinc-400 mb-1.5 uppercase tracking-wider">Suas categorias salvas (clique no ✕ para excluir):</label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {savedCategories.map((c) => (
+                      <span
+                        key={c.name}
+                        className="text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1.5"
+                        style={{ background: c.color + "1a", color: c.color }}
+                      >
+                        {c.name}
+                        <button
+                          type="button"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (window.confirm(`Excluir a categoria "${c.name}" das suas salvas?`)) {
+                              await deleteCustomCategory(c.name);
+                              if (type === c.name) {
+                                setType("disponivel");
+                              }
+                            }
+                          }}
+                          className="hover:text-red-500 transition-colors font-bold text-xs"
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {type === "custom" && (
+                <div className="space-y-3 animate-fade-up">
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-500 mb-1.5">Nome da Categoria</label>
+                    <input
+                      value={customType}
+                      onChange={(e) => setCustomType(e.target.value)}
+                      placeholder="Ex: Home Office, Viagem, Reunião"
+                      className="w-full bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-xl px-3 py-2.5 text-sm text-navy dark:text-white outline-none focus:border-green-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-500 mb-1.5">Escolha uma Cor</label>
+                    <div className="flex gap-2 flex-wrap items-center">
+                      {PRESETS_COLORS.map((c) => (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => setSelectedColor(c)}
+                          className={`w-7 h-7 rounded-full border-2 transition-all ${
+                            selectedColor === c
+                              ? "border-navy dark:border-white scale-110 shadow-sm"
+                              : "border-transparent hover:scale-105"
+                          }`}
+                          style={{ backgroundColor: c }}
+                        />
+                      ))}
+                      <div className="relative w-7 h-7 rounded-full border-2 border-dashed border-zinc-300 dark:border-white/20 hover:scale-105 overflow-hidden flex items-center justify-center" title="Cor personalizada">
+                        <input
+                          type="color"
+                          value={selectedColor}
+                          onChange={(e) => setSelectedColor(e.target.value)}
+                          className="absolute inset-0 w-12 h-12 -translate-x-2 -translate-y-2 cursor-pointer border-none p-0 bg-transparent"
+                        />
+                        <span className="text-[10px] pointer-events-none text-zinc-400">+</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 pt-1">
+                    <input
+                      type="checkbox"
+                      id="save_category"
+                      checked={shouldSaveCategory}
+                      onChange={(e) => setShouldSaveCategory(e.target.checked)}
+                      className="rounded border-zinc-300 text-green-600 focus:ring-green-500 w-4 h-4 cursor-pointer"
+                    />
+                    <label htmlFor="save_category" className="text-xs font-bold text-zinc-500 cursor-pointer select-none">
+                      💾 Salvar esta categoria para usar depois
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold text-zinc-500 mb-1.5">Observação (opcional)</label>
+                <input
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="Ex: Visita técnica obra Silva"
+                  className="w-full bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-xl px-3 py-2.5 text-sm text-navy dark:text-white outline-none focus:border-green-400"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowAddForm(false)}
+                  className="px-4 py-2.5 rounded-xl text-sm font-bold bg-zinc-100 dark:bg-white/5 text-zinc-600 dark:text-zinc-300"
+                >
+                  Voltar
+                </button>
+                <button
+                  onClick={save}
+                  disabled={saving}
+                  className="px-4 py-2.5 rounded-xl text-sm font-bold bg-green-600 hover:bg-green-700 text-white disabled:opacity-60 shadow-lg shadow-green-500/15"
+                >
+                  {saving ? "Adicionando…" : "Adicionar"}
+                </button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
