@@ -2,7 +2,7 @@ import { Navigate, Outlet, NavLink, Link, useNavigate, useLocation } from "react
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/data/useAuth";
 import { useNotifications, timeAgo } from "@/hooks/data/useNotifications";
-import { Loader2, LogOut, LayoutDashboard, Briefcase, Users, Search, Bell, Settings, Sun, Moon, UserCircle, CheckCheck, Plus, UserPlus, ArrowRight, Command, Rss, CalendarDays, BarChart3, Gauge, Contact, KanbanSquare, ListChecks, SlidersHorizontal } from "lucide-react";
+import { Loader2, LogOut, LayoutDashboard, Briefcase, Users, Search, Bell, Settings, Sun, Moon, UserCircle, CheckCheck, Plus, UserPlus, ArrowRight, Command, Rss, CalendarDays, BarChart3, Gauge, Contact, KanbanSquare, ListChecks, SlidersHorizontal, BookOpen } from "lucide-react";
 import { useTheme } from "@/components/layout/ThemeProvider";
 import VerticeLogo from "@/components/layout/VerticeLogo";
 import FloatingChat from "@/components/chat/FloatingChat";
@@ -10,6 +10,7 @@ import MobileTabBar from "@/components/layout/MobileTabBar";
 import { LightboxProvider } from "@/components/hq/thevertice/shared";
 import { CrmCompanyProvider } from "@/hooks/data/useCrmCompany";
 import CompanySwitcher from "@/components/hq/crm/CompanySwitcher";
+import CrmGuideDrawer from "@/components/hq/crm/CrmGuideDrawer";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -163,6 +164,7 @@ export default function HqLayout() {
   const [showBell, setShowBell] = useState(false);
   const paletteRef = useRef<HTMLDivElement>(null);
   const bellRef = useRef<HTMLDivElement>(null);
+  const [showGuide, setShowGuide] = useState(false);
 
   // Notificações reais (ex.: cliente comentou numa atualização),
   // vindas do banco com chegada ao vivo via Realtime.
@@ -221,7 +223,7 @@ export default function HqLayout() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 py-4 flex flex-col gap-2 px-4">
+        <nav className="flex-1 py-4 flex flex-col gap-2 px-4 overflow-y-auto min-h-0 scrollbar-none">
           <p className="hidden lg:block text-xs font-bold text-zinc-400 mb-2 px-4">MAIN MENU</p>
           <NavItem icon={<LayoutDashboard size={20} />} label="Dashboard" to="/hq" end />
           <NavItem icon={<Briefcase size={20} />} label="Projetos" to="/hq/projects" />
@@ -283,7 +285,18 @@ export default function HqLayout() {
           </div>
 
           <div className="flex items-center gap-4">
-            {location.pathname.startsWith("/hq/crm") && <CompanySwitcher />}
+            {location.pathname.startsWith("/hq/crm") && (
+              <>
+                <CompanySwitcher />
+                <button
+                  onClick={() => setShowGuide(true)}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 rounded-full text-xs font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-100/50 dark:hover:bg-blue-500/20 transition-all shadow-sm shrink-0"
+                >
+                  <BookOpen size={13} />
+                  <span className="hidden sm:inline">Guia do CRM</span>
+                </button>
+              </>
+            )}
             {/* Command Palette trigger */}
             <div ref={paletteRef} className="hidden md:block relative">
               <button
@@ -390,6 +403,7 @@ export default function HqLayout() {
       />
 
       <FloatingChat />
+      <CrmGuideDrawer isOpen={showGuide} onClose={() => setShowGuide(false)} />
     </div>
     </CrmCompanyProvider>
   );

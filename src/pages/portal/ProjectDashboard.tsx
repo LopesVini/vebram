@@ -1,13 +1,14 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import {
   Activity, FileCheck, Layers, Clock as ClockIcon,
   Check, Send, Sparkles, Bot, Loader2, Inbox, Trash2,
   Compass, Ruler, Blocks, ClipboardCheck, Award, Briefcase,
+  Maximize2, Minimize2, X,
 } from "lucide-react";
 import { useGroqChat } from "@/hooks/data/useGroqChat";
 import { useClientProject } from "@/hooks/data/useClientProject";
@@ -577,7 +578,9 @@ export default function ProjectDashboard() {
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const expandedMessagesEndRef = useRef<HTMLDivElement>(null);
   const [chatInput, setChatInput] = useState("");
+  const [isChatExpanded, setIsChatExpanded] = useState(false);
 
   const { project, loading: loadingProject } = useClientProject();
   const { milestones, loading: loadingMilestones, approveMilestone } = useMilestones(project?.id);
@@ -660,6 +663,16 @@ INSTRUÇÕES:
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
+
+  useEffect(() => {
+    if (isChatExpanded) {
+      // Small timeout to let the modal animate and mount/adjust layout
+      const timer = setTimeout(() => {
+        expandedMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [messages, isLoading, isChatExpanded]);
 
   function handleSend() {
     if (!chatInput.trim() || isLoading) return;
@@ -893,6 +906,10 @@ INSTRUÇÕES:
                   className="text-zinc-400 hover:text-red-500 transition-colors p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-white/5">
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
+                <button onClick={() => setIsChatExpanded(true)} title="Expandir chat"
+                  className="text-zinc-400 hover:text-primary dark:hover:text-white transition-colors p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-white/5">
+                  <Maximize2 className="w-3.5 h-3.5" />
+                </button>
                 <div className="text-[9px] border border-accent/40 text-accent px-1.5 py-0.5 rounded font-bold">BETA</div>
               </div>
             </div>
@@ -984,6 +1001,115 @@ INSTRUÇÕES:
           </div>
         </div>
       </div>
+
+      {/* Modal do Chat Expandido */}
+      <AnimatePresence>
+        {isChatExpanded && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsChatExpanded(false)}
+              className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: "spring", duration: 0.4 }}
+              className="fixed inset-4 md:inset-10 lg:inset-20 z-[101] bg-white dark:bg-[#121829] border border-zinc-200 dark:border-white/15 rounded-2xl shadow-2xl flex flex-col max-w-4xl mx-auto h-[85vh] md:h-[80vh] overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none" />
+              <div className="relative flex justify-between items-center px-4 py-3 border-b border-zinc-200 dark:border-white/10 shrink-0 bg-white dark:bg-[#121829] z-10">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
+                      <Bot className="w-5 h-5 text-white" />
+                    </div>
+                    <span className="absolute -bottom-0.5 -right-0.5 flex h-2.5 w-2.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500 border-2 border-white dark:border-[#121829]" />
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-xs font-black text-navy dark:text-white tracking-tight flex items-center gap-1.5">
+                      VEBRAM AI <Sparkles className="w-3.5 h-3.5 text-accent" />
+                    </p>
+                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400">Online • Resposta instantânea • Modo Expandido</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={clearMessages} title="Limpar conversa"
+                    className="text-zinc-400 hover:text-red-500 transition-colors p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-white/5">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => setIsChatExpanded(false)} title="Minimizar chat"
+                    className="text-zinc-400 hover:text-primary dark:hover:text-white transition-colors p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-white/5">
+                    <Minimize2 className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => setIsChatExpanded(false)} title="Fechar"
+                    className="text-zinc-400 hover:text-red-500 transition-colors p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-white/5">
+                    <X className="w-4 h-4" />
+                  </button>
+                  <div className="text-[9px] border border-accent/40 text-accent px-1.5 py-0.5 rounded font-bold">BETA</div>
+                </div>
+              </div>
+
+              <div className="relative flex-1 overflow-y-auto px-4 py-4 space-y-3 min-h-0 bg-white dark:bg-[#121829]">
+                {messages.map((m, i) => (
+                  <motion.div key={m.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i === 0 ? 0.2 : 0, duration: 0.3 }}
+                    className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+                  >
+                    <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-xs md:text-sm leading-relaxed whitespace-pre-wrap ${
+                      m.role === "user"
+                        ? "bg-primary text-white rounded-br-sm"
+                        : "bg-zinc-100 dark:bg-white/5 text-navy dark:text-zinc-200 rounded-bl-sm border border-zinc-200 dark:border-white/10"
+                    }`}>{m.content}</div>
+                  </motion.div>
+                ))}
+                {isLoading && (
+                  <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex justify-start">
+                    <div className="bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-2xl rounded-bl-sm px-4 py-2.5 flex items-center gap-1">
+                      {[0, 1, 2].map(dot => (
+                        <span key={dot} className="w-2 h-2 rounded-full bg-zinc-400 dark:bg-zinc-500 animate-bounce" style={{ animationDelay: `${dot * 0.15}s` }} />
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+                {messages.length <= 1 && !isLoading && (
+                  <div className="pt-1 flex flex-wrap gap-2">
+                    {suggestedQuestions.map((q, i) => (
+                      <motion.button key={i} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.3 + i * 0.08 }}
+                        onClick={() => handleSuggestion(q)}
+                        className="text-xs px-3 py-1.5 rounded-full bg-accent/10 hover:bg-accent hover:text-white text-accent border border-accent/20 transition-colors font-medium"
+                      >{q}</motion.button>
+                    ))}
+                  </div>
+                )}
+                <div ref={expandedMessagesEndRef} />
+              </div>
+
+              <div className="relative px-4 py-3 border-t border-zinc-200 dark:border-white/10 shrink-0 bg-white dark:bg-[#121829]">
+                <div className="flex items-center gap-3 bg-zinc-100 dark:bg-black/40 border border-zinc-200 dark:border-white/10 rounded-full pl-4 pr-1.5 py-1.5 focus-within:border-primary/50 transition-colors">
+                  <input type="text" value={chatInput} onChange={e => setChatInput(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && handleSend()}
+                    placeholder="Pergunte algo..." disabled={isLoading}
+                    className="flex-1 bg-transparent text-xs md:text-sm text-navy dark:text-white placeholder:text-zinc-400 outline-none disabled:opacity-50"
+                  />
+                  <button onClick={handleSend} disabled={!chatInput.trim() || isLoading}
+                    className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-accent text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-transform shadow-md disabled:opacity-40 disabled:cursor-not-allowed disabled:scale-100"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

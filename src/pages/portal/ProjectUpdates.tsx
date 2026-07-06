@@ -50,7 +50,7 @@ function TimelineCard({ upd }: { upd: Update }) {
         </div>
 
         {upd.content && (
-          <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-2 font-sans">{upd.content}</p>
+          <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-2 font-sans whitespace-pre-wrap">{upd.content}</p>
         )}
 
         <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-white/5">

@@ -172,7 +172,7 @@ export default function UpdatesTab({ projectId, authorName }: { projectId: strin
                     {deleting === u.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
                   </button>
                 </div>
-                {u.content && <p className="text-xs text-zinc-500 mt-1 leading-relaxed">{u.content}</p>}
+                {u.content && <p className="text-xs text-zinc-500 mt-1 leading-relaxed whitespace-pre-wrap">{u.content}</p>}
                 <p className="text-[10px] text-zinc-400 mt-2">{fmtDate(u.created_at)} · {u.author_name}</p>
                 <UpdateComments updateId={u.id} />
               </div>
