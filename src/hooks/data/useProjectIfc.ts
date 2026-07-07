@@ -19,6 +19,23 @@ function pathFromUrl(url: string): string {
   return idx !== -1 ? url.slice(idx + marker.length) : "";
 }
 
+// Violação de RLS no upload é opaca ("new row violates..."). Consulta
+// is_admin() no banco para dizer ao usuário qual é o problema real:
+// conta sem cargo admin em profiles.role vs. políticas do bucket.
+async function explainStorageError(message: string): Promise<string> {
+  if (!/row-level security/i.test(message)) return message;
+  try {
+    const { data: isAdmin, error } = await supabase.rpc("is_admin");
+    if (!error && isAdmin === false) {
+      return "Sua conta não tem cargo de administrador no banco (profiles.role). " +
+        "Só admins podem enviar modelos IFC — peça a promoção da conta e entre novamente.";
+    }
+  } catch { /* segue com a mensagem genérica */ }
+  return "O banco bloqueou o envio por política de acesso (RLS) no bucket ifc-models. " +
+    "Confirme que as migrações de storage foram aplicadas " +
+    "(20260702_seguranca_banco.sql e 20260706_storage_ifc_select.sql).";
+}
+
 export function storagePath(projectId: string, projectName: string): string {
   return `${projectId}/${slugify(projectName)}.ifc`;
 }
@@ -50,7 +67,9 @@ export function useProjectIfc() {
         .from(BUCKET)
         .upload(path, file, { upsert: true, contentType: "application/octet-stream" });
 
-      if (uploadError) return { error: uploadError.message, url: null };
+      if (uploadError) {
+        return { error: await explainStorageError(uploadError.message), url: null };
+      }
 
       const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
 
