@@ -1,8 +1,11 @@
 import { useState } from "react";
-import { Sparkles, CheckCircle2 } from "lucide-react";
+import { Sparkles, CheckCircle2, MessageCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useEnhanceText } from "@/hooks/data/useEnhanceText";
 import { ENHANCE_QUOTE_PROMPT } from "@/lib/enhancePrompts";
+
+const WHATSAPP_URL =
+  "https://api.whatsapp.com/send?phone=5531985981606&text=Ol%C3%A1%21%20Gostaria%20de%20falar%20sobre%20um%20projeto%20com%20a%20VEBRAM.";
 
 const GetStarted = () => {
   const [message, setMessage] = useState("");
@@ -78,9 +81,18 @@ const GetStarted = () => {
           <div className="text-center py-16 animate-in fade-in zoom-in duration-500">
             <CheckCircle2 className="w-24 h-24 text-accent mx-auto mb-6" />
             <h3 className="text-3xl font-extrabold text-foreground mb-4">Formulário enviado com sucesso!</h3>
-            <p className="text-muted-foreground text-lg max-w-md mx-auto">
+            <p className="text-muted-foreground text-lg max-w-md mx-auto mb-8">
               Nossa equipe recebeu sua solicitação e você também receberá uma confirmação no seu e-mail em instantes.
             </p>
+            <a
+              href={WHATSAPP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-3 bg-[#25D366] hover:bg-[#1EBE59] text-white font-bold text-lg px-8 py-4 rounded-full shadow-xl hover:scale-[1.02] transition-all"
+            >
+              <MessageCircle size={22} />
+              Falar agora no WhatsApp
+            </a>
           </div>
         ) : (
           <form className="space-y-4 md:space-y-6" onSubmit={handleSubmit}>
@@ -168,6 +180,22 @@ const GetStarted = () => {
               <span className="relative z-10">{loading ? "Enviando..." : "Solicitar Orçamento"}</span>
               <div className="absolute inset-0 bg-accent translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]"></div>
             </button>
+
+            <div className="flex items-center gap-4 text-muted-foreground">
+              <div className="flex-1 h-px bg-border" />
+              <span className="text-xs font-bold uppercase tracking-widest">ou</span>
+              <div className="flex-1 h-px bg-border" />
+            </div>
+
+            <a
+              href={WHATSAPP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center justify-center gap-3 bg-[#25D366] hover:bg-[#1EBE59] text-white font-bold text-lg px-8 py-4 rounded-xl shadow-xl hover:scale-[1.02] transition-all"
+            >
+              <MessageCircle size={22} />
+              Falar agora no WhatsApp
+            </a>
           </form>
         )}
       </div>
