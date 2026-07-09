@@ -14,9 +14,10 @@ export interface TheVerticeProfile {
 
 // Formato bruto que o Supabase devolve nos selects com joins,
 // antes de convertermos para os tipos de cima.
-type PostRow = Omit<TheVerticePost, "views" | "likes" | "comments"> & {
+type PostRow = Omit<TheVerticePost, "views" | "likes" | "comments" | "viewedByMe"> & {
   views: number | null;
   post_likes: { user_id: string }[] | null;
+  post_views: { user_id: string }[] | null;
   comments: TheVerticeComment[] | null;
 };
 
@@ -46,6 +47,7 @@ export interface TheVerticePost {
   views: number;
   created_at: string;
   likes: string[]; // array of user IDs
+  viewedByMe: boolean;
   comments: TheVerticeComment[];
 }
 
@@ -94,7 +96,7 @@ export function useTheVertice() {
 
     const [pr, po, ev, pl] = await Promise.all([
       supabase.from("profiles").select("*").order("created_at"),
-      supabase.from("posts").select("*, comments(*), post_likes(user_id)").order("created_at", { ascending: false }),
+      supabase.from("posts").select("*, comments(*), post_likes(user_id), post_views(user_id)").order("created_at", { ascending: false }),
       supabase.from("events").select("*"),
       supabase.from("polls").select("*, poll_options(*, poll_votes(user_id))").order("created_at", { ascending: false }),
     ]);
@@ -113,6 +115,7 @@ export function useTheVertice() {
       views: p.views || 0,
       created_at: p.created_at,
       likes: (p.post_likes || []).map((x) => x.user_id),
+      viewedByMe: (p.post_views || []).some((x) => x.user_id === user.id),
       comments: (p.comments || []).slice().sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()),
     }));
     setPosts(mappedPosts);
@@ -317,9 +320,12 @@ export function useTheVertice() {
   };
 
   const incrementViews = async (postId: string) => {
+    const post = posts.find((p) => p.id === postId);
+    if (!post || post.viewedByMe) return; // já contabilizada para este admin
+
     await supabase.rpc("increment_views", { p_id: postId });
     setPosts((prev) =>
-      prev.map((p) => (p.id === postId ? { ...p, views: p.views + 1 } : p))
+      prev.map((p) => (p.id === postId ? { ...p, views: p.views + 1, viewedByMe: true } : p))
     );
   };
 
